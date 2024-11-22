@@ -13,10 +13,10 @@ Kalendio ist eine innovative, kollaborative Kalender-App, die speziell für Sch�
 
 ### 2. 🏆 **Ranking-System**
 - Motiviert durch Rankings: Nutzer*innen können Punkte für das Hinzufügen und Bearbeiten von Einträgen sammeln.
-- Die besten Teilnehmer*innen werden wöchentlich in einer Rangliste angezeigt.
+- Die besten Teilnehmer*innen werden in einer Rangliste angezeigt.
 
 ### 3. 🔒 **Notizfunktion**
-- Persönliche und gemeinsame Notizen direkt zu Terminen hinzufügen.
+- Persönliche und Notizen direkt in Kalendio schreiben.
 - Ideal für Aufgabenbeschreibungen oder zusätzliche Informationen.
 
 ---
