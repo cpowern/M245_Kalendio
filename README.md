@@ -33,4 +33,11 @@ Wir freuen uns über dein Feedback und Vorschläge, um Kalendio noch besser zu m
 ---
 
 ## Autoren
-[Nicolas Haas]
+[Nicolas Haas](https://github.com/cpowern.com)
+[Sophia Cuarte](https://github.com/SophiaCuarte.com)
+[Carina Cordes](https://github.com/coerres.com)
+
+
+
+
+
