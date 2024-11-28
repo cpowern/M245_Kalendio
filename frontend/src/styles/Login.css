@@ -6,7 +6,7 @@
     align-items: center;
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, #4facfe, #00f2fe); /* Same blue gradient as landing page */
+    background: linear-gradient(135deg, #9544ff, #c99fff); /* Same blue gradient as landing page */
     color: white;
     font-family: var(--font-family);
   }
@@ -99,3 +99,40 @@
     background-color: black;
     transform: scale(1.05);
   }
+
+
+  .group-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .join-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .join-group .login-input {
+    width: 100%;
+    margin: 0;
+  }
+  
+  .google-button {
+    background-color: black;
+    color: white;
+    border-radius: 8px;
+    padding: 0.8rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .google-button:hover {
+    background-color: #333;
+    transform: scale(1.05);
+  }
+  
