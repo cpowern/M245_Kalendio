@@ -5,6 +5,27 @@ Kalendio ist eine innovative, kollaborative Kalender-App, die speziell für Sch�
 
 ---
 
+## **Struktur**
+
+### **Frontend**
+- **Framework**: React (mit Vite erstellt)
+- **Technologien**: JavaScript, React Router, Axios
+- **Dateien/Ordner**:
+  - `/src`: Komponenten, Seiten
+  - `/public`: Statische Dateien
+  - `vite.config.js`: Konfigurationsdatei
+
+### **Backend**
+- **System**: Node.js mit Express
+- **Pakete**: `express`, `cors`, `body-parser`, `dotenv`
+- **Struktur**:
+  - `/routes`: API-Endpunkte (z. B. `exampleRoutes.js`)
+  - `/models`: Datenstrukturen (z. B. `exampleModel.js`)
+  - `/controllers`: Logik (z. B. `exampleController.js`)
+  - `/config`: Datenbank-Verbindungen (optional)
+  - `server.js`: Hauptdatei
+
+
 ## ⚙️ Funktionen
 
 ### 1. 📅 **Zusammenarbeitender Kalender**
