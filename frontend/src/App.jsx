@@ -6,18 +6,25 @@ import Signup from './pages/signup';
 import GroupSelection from './pages/Groupselection';
 import MainPage from './pages/mainpage';
 
+import { GoogleOAuthProvider } from '@react-oauth/google';
+ 
+// Google OAuth Client ID hier einsetzen
+const clientId = 'DEINE_GOOGLE_CLIENT_ID';
+ 
 const App = () => {
-    return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
+  return (
+<GoogleOAuthProvider clientId={clientId}>
+<Router>
+<Routes>
+<Route path="/" element={<LandingPage />} />
+<Route path="/login" element={<Login />} />
+<Route path="/signup" element={<Signup />} />
                 <Route path="/groupselection" element={<GroupSelection />} />
                 <Route path="/mainpage" element={<MainPage />} />
-            </Routes>
-        </Router>
-    );
+</Routes>
+</Router>
+</GoogleOAuthProvider>
+  );
 };
-
+ 
 export default App;
