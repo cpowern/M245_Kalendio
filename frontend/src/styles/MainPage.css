@@ -1,0 +1,200 @@
+/* Hauptlayout */
+.main-page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    background: linear-gradient(135deg, #9544ff, #c99fff);
+  }
+  
+  /* Obere Leiste */
+  .top-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: calc(100% - 50px); /* Standardbreite für geschlossene Sidebar */
+    padding: 1rem 2rem;
+    background-color: #102a42;
+    color: white;   
+  }
+
+  .side-panel:hover ~ .top-bar {
+    margin-right: 200px; /* Schiebt Inhalt nach links, wenn Sidebar geöffnet wird */
+  }
+  
+  .main-title {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+  
+  .group-code {
+    font-size: 1rem;
+    background: #ffffff;
+    color: #102a42;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    align-content: left;
+    position: absolute;
+    right: 4rem;
+  }
+  
+  /* Hauptinhalt */
+  .main-content {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    overflow: hidden;
+    transition: margin-right 0.3s ease; /* Übergang für Verschiebung */
+  }
+  
+  /* Kalendercontainer */
+  .calendar-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  /* Kalender */
+  .react-calendar {
+    width: 100%;
+    max-width: 600px;
+    border: none;
+    font-family: Arial, sans-serif;
+    font-size: 1rem;
+  }
+  
+  .react-calendar__tile {
+    height: 75px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 5px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    color: black; /* Standardfarbe für alle Tage */
+  }
+  
+  /* Wochenende (Samstag und Sonntag) */
+  .react-calendar__month-view__days__day--weekend {
+    color: red !important; /* Wochenenden rot */
+  }
+  
+  .react-calendar__tile:enabled:hover {
+    background: #c99fff;
+    transform: scale(1.05);
+    color: black; /* Schriftfarbe bleibt schwarz bei Hover */
+  }
+  
+  .react-calendar__tile--now {
+    background: #9544ff;
+    color: black; /* Aktueller Tag - Zahlen schwarz */
+    border-radius: 8px;
+  }
+  
+  .react-calendar__tile--active {
+    background: #5e0bff;
+    color: white; /* Zahlen weiß, wenn aktiv ausgewählt */
+    border-radius: 8px;
+  }
+  
+  /* Tage der Woche und Monatsnamen */
+  .react-calendar__month-view__weekdays {
+    font-weight: bold;
+    color: black; /* Wochentage schwarz */
+  }
+  
+  .react-calendar__navigation button {
+    color: black; /* Monat-Navigation schwarz */
+    font-weight: bold;
+    font-size: 1rem;
+  }
+  
+  /* Ausgewähltes Datum */
+  .selected-date {
+    margin-top: 1rem;
+    font-size: 1.2rem;
+    color: white;
+  }
+  
+  /* Rechte Sidebar */
+  .side-panel {
+    width: 50px;
+    height: 100%;
+    background-color: #4b0082;
+    color: white;
+    transition: width 0.3s ease;
+    overflow: hidden;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: white; /* Weiße Sidebar */
+  }
+  
+  .side-panel:hover {
+    width: 300px;
+  }
+
+  .side-panel::before {
+    content: '🏆'; /* Pokal-Icon */
+    font-size: 1.5rem;
+    display: block;
+    text-align: center;
+    margin: 1rem 0;
+  }
+
+  .side-panel h2 {
+    margin: 1rem;
+    font-size: 1.2rem;
+    text-align: center;
+    color: #333;
+  }
+  
+  .side-panel p {
+    margin: 1rem;
+    font-size: 1rem;
+    color: white;
+  }
+  
+  .podium {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    height: 150px; /* Höhe des Podests */
+    margin-top: 2rem;
+  }
+  
+  .first-place,
+  .second-place,
+  .third-place {
+    width: 80px;
+    text-align: center;
+    background-color: #f7f7f7;
+    border: 1px solid #333;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border-radius: 4px;
+  }
+  
+  .first-place {
+    height: 100px; /* Höchster Platz */
+    background: gold;
+    margin: 0 10px;
+  }
+  
+  .second-place {
+    height: 75px; /* Zweithöchster Platz */
+    background: silver;
+    margin-right: 10px;
+  }
+  
+  .third-place {
+    height: 50px; /* Dritthöchster Platz */
+    background: #cd7f32; /* Bronze */
+    margin-left: 10px;
+  }
