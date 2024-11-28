@@ -1,0 +1,85 @@
+/* Reset inherited padding and margin */
+.login-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #4facfe, #00f2fe); /* Same blue gradient as landing page */
+    color: white;
+    font-family: var(--font-family);
+  }
+  
+  .login-container {
+    background: rgba(0, 0, 0, 0.7); /* Slightly transparent dark background */
+    border-radius: 12px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .login-title {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .login-subtitle {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    color: rgba(255, 255, 255, 0.8); /* Muted white text */
+  }
+  
+  .login-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .login-input {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    color: white;
+  }
+  
+  .login-input:focus {
+    border-color: white;
+    outline: none;
+  }
+  
+  .login-button {
+    background-color: white;
+    color: #4facfe;
+    border-radius: 8px;
+    padding: 0.8rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .login-button:hover {
+    background-color: #e3f2fd;
+    transform: scale(1.05);
+  }
+  
+  .login-footer {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .login-footer a {
+    color: white;
+    text-decoration: underline;
+  }
+  
+  .login-footer a:hover {
+    color: #e3f2fd;
+  }
+  
