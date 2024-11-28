@@ -82,4 +82,20 @@
   .login-footer a:hover {
     color: #e3f2fd;
   }
-  
+
+  .google-button{
+    background-color: black;
+    color: white;
+    border-radius: 8px;
+    padding: 0.8rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+
+  .google-button:hover {
+    background-color: black;
+    transform: scale(1.05);
+  }
