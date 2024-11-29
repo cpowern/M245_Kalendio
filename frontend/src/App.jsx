@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Signup from './pages/signup';
 import GroupSelection from './pages/Groupselection';
 import MainPage from './pages/MainPage';
+import AddTask from './pages/AddTask';
 
 // Google OAuth Client ID hier einsetzen
 const clientId = 'DEINE_GOOGLE_CLIENT_ID';
@@ -22,6 +23,7 @@ const App = () => {
           <Route path="/signup" element={<Signup />} />
           <Route path="/groupselection" element={<GroupSelection />} />
           <Route path="/mainpage" element={<MainPage />} />
+          <Route path="/addtask" element={<AddTask />} />  
         </Routes>
       </Router>
     </GoogleOAuthProvider>
