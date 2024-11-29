@@ -7,7 +7,7 @@ import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Signup from './pages/signup';
 import GroupSelection from './pages/Groupselection';
-import MainPage from './pages/mainpage';
+import MainPage from './pages/MainPage';
 
 // Google OAuth Client ID hier einsetzen
 const clientId = 'DEINE_GOOGLE_CLIENT_ID';
