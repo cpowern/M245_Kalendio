@@ -2,11 +2,11 @@ const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 require('dotenv').config();
-require('./routes/auth'); // Updated path to auth.js
-const connectDB = require('./config/db'); // Path to db.js
+const connectDB = require('./config/db'); // MongoDB connection
+const authRoutes = require('./routes/auth'); // Import the auth routes
 
 const app = express();
-const PORT = 5173; // Set port to 5173
+const PORT = 5000; // Change this from 5173
 
 // Connect to MongoDB
 connectDB();
@@ -17,20 +17,16 @@ app.use(session({ secret: 'secret', resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Google Auth Routes
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+// Routes
+app.use(authRoutes); // Attach authentication routes
 
-app.get(
-    '/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/' }),
-    (req, res) => {
-        // Successful authentication
-        res.redirect('http://localhost:5173/dashboard'); // Redirect to your frontend dashboard route
-    }
-);
+// Root Route
+app.get('/', (req, res) => {
+    res.send({ message: 'Welcome to the Kalendio API' }); // JSON response for root URL
+});
 
 // Protected route example
-app.get('/dashboard', (req, res) => {
+app.get('/MainPage', (req, res) => {
     if (!req.isAuthenticated()) {
         return res.status(401).send({ message: 'Not authenticated' });
     }

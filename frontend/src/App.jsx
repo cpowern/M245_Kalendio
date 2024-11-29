@@ -14,7 +14,7 @@ const clientId = 'DEINE_GOOGLE_CLIENT_ID';
 
 const App = () => {
   return (
-    <GoogleOAuthProvider clientId={clientId}>
+    // <GoogleOAuthProvider clientId={477667469500-pspcp25dpu232e221ng8ebj3gf2og3ue.apps.googleusercontent.com}>
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -24,10 +24,8 @@ const App = () => {
           <Route path="/mainpage" element={<MainPage />} />
         </Routes>
       </Router>
-    </GoogleOAuthProvider>
+    // </GoogleOAuthProvider>
   );
 };
 
 export default App;
-
-// in der const app:           <Route path="/mainpage" element={<MainPage />} />
