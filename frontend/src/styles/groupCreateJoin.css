@@ -1,49 +1,97 @@
+/* Grundlegendes Layout für die Gruppe erstellen / beitreten Seite */
 .group-create-join-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
     padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     text-align: center;
+    flex-direction: column;
+    background-color: #242424;
+    border-radius: 12px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
   }
   
+  /* Titel der Seite */
   .group-create-join-container h1 {
     font-size: 2.5rem;
+    color: #646cff;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+  }
+  
+  /* Beschreibung */
+  .group-create-join-container p {
+    color: #ddd;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Formularelemente (Eingabefelder) */
+  .group-create-join-form input {
+    width: 100%;
+    max-width: 400px;
+    padding: 0.8rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
     margin-bottom: 1rem;
   }
   
-  .group-form {
-    margin-bottom: 2rem;
-  }
-  
-  .group-form input {
-    padding: 0.5rem;
+  /* Buttons für Interaktionen */
+  .group-create-join-form button {
+    padding: 1rem 2rem;
+    background-color: #646cff;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
     font-size: 1rem;
-    margin-right: 1rem;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-  }
-  
-  .group-form button {
-    padding: 0.7rem 1.2rem;
-    background-color: #4facfe;
-    color: white;
-    border: none;
-    border-radius: 5px;
     cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-bottom: 1rem;
   }
   
-  .group-form button:hover {
-    background-color: #2a89c9;
+  /* Hover-Effekt für Buttons */
+  .group-create-join-form button:hover {
+    background-color: #535bf2;
   }
   
-  .group-create-join-container button {
-    margin-top: 1rem;
-    background-color: #e3f2fd;
-    color: #4facfe;
-    padding: 0.6rem 1rem;
-    border-radius: 5px;
+  /* Button für den Wechsel zwischen Erstellen und Beitreten */
+  .group-create-join-container button.toggle-mode {
+    padding: 0.8rem 2rem;
+    background-color: #535bf2;
+    color: #fff;
     border: none;
+    border-radius: 8px;
+    font-size: 1rem;
     cursor: pointer;
+    margin-top: 1.5rem;
+    transition: background-color 0.3s ease;
   }
   
-  .group-create-join-container button:hover {
-    background-color: #b3d8e6;
+  /* Hover-Effekt für Toggle-Button */
+  .group-create-join-container button.toggle-mode:hover {
+    background-color: #646cff;
+  }
+  
+  /* Für mobile Geräte: Responsivität */
+  @media (max-width: 768px) {
+    .group-create-join-container {
+      padding: 1rem;
+      max-width: 90%;
+    }
+  
+    .group-create-join-container h1 {
+      font-size: 2rem;
+    }
+  
+    .group-create-join-form input,
+    .group-create-join-form button {
+      width: 100%;
+      max-width: none;
+    }
   }
   

@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
+import '../styles/groupCreateJoin.css';  // Import der CSS-Datei
 
 const GroupCreateJoin = () => {
   const [isCreating, setIsCreating] = useState(true); // Toggle zwischen Erstellen und Beitreten
   const [groupCode, setGroupCode] = useState('');
 
-  // Handler für den Wechsel zwischen Erstellen und Beitreten
   const toggleMode = () => {
     setIsCreating(!isCreating);
   };
 
-  // Handler für das Erstellen einer Gruppe
   const handleCreateGroup = () => {
     console.log('Gruppe erstellt!');
   };
 
-  // Handler für das Beitreten einer Gruppe
   const handleJoinGroup = () => {
     console.log(`Beitreten zur Gruppe mit Code: ${groupCode}`);
   };
@@ -22,7 +20,7 @@ const GroupCreateJoin = () => {
   return (
     <div className="group-create-join-container">
       <h1>{isCreating ? 'Gruppe Erstellen' : 'Gruppe Beitreten'}</h1>
-      <div className="group-form">
+      <div className="group-create-join-form">
         {isCreating ? (
           <div>
             <p>Erstelle eine neue Gruppe und lade Mitglieder ein.</p>
@@ -41,7 +39,7 @@ const GroupCreateJoin = () => {
           </div>
         )}
       </div>
-      <button onClick={toggleMode}>
+      <button className="toggle-mode" onClick={toggleMode}>
         {isCreating ? 'Schon eine Gruppe? Beitreten' : 'Noch keine Gruppe? Erstellen'}
       </button>
     </div>
