@@ -82,3 +82,21 @@ button:focus-visible {
 .read-the-docs {
   color: #888;
 }
+
+body {
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background-color: #f8f8f8;
+}
+
+#root {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+h1 {
+  color: #333;
+}
