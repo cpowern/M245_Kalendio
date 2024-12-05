@@ -67,6 +67,12 @@ Starte den Server:
 node server.js
 ```
 
+Falls du dich manuell einloggen möchtest, führe zusätzlich folgenden Befehl aus:
+
+```bash
+node manualServer.js
+```
+
 ### **2. Frontend starten**
 
 Öffne ein neues Terminal und navigiere in den Ordner des Frontends:
