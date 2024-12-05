@@ -8,6 +8,13 @@ const authRoutes = require('./routes/auth'); // Google auth routes
 const app = express();
 const PORT = 5000;
 
+const cors = require('cors');
+app.use(cors());
+app.use(express.json());
+
+// Importiere und nutze die Routen
+app.use('/api', require('./routes/auth'));
+
 // Connect to MongoDB
 connectDB();
 

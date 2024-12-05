@@ -3,8 +3,27 @@ const passport = require('passport');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-
+require('dotenv').config();
 const router = express.Router();
+const calendar = require('../googleCalendar');
+
+router.get('/events', async (req, res) => {
+    try {
+        const { data } = await calendar.events.list({
+            calendarId: process.env.GOOGLE_CALENDAR_ID, // Kalender-ID aus .env
+            timeMin: new Date().toISOString(),
+            timeMax: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(), // Nächste Woche
+            singleEvents: true,
+            orderBy: 'startTime',
+        });
+        res.json(data.items); // Events zurückgeben
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Events:', error);
+        res.status(500).json({ message: 'Fehler beim Abrufen der Events' });
+    }
+});
+
+module.exports = router;
 
 // Google OAuth Strategy
 passport.use(
