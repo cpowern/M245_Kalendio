@@ -62,12 +62,18 @@ const Login = () => {
           <span className="divider-text">or</span>
           <span className="divider-line"></span>
         </div>
-        <button
-          className="google-button"
-          onClick={() => (window.location.href = 'http://localhost:5000/auth/google')}
-        >
-          <span className="google-icon">G</span> Sign in with Google
-        </button>
+        <div className="group-buttons">
+          <button
+            className="google-button"
+            onClick={() => (window.location.href = 'http://localhost:5000/auth/google')}
+          >
+            <span className="google-icon">G</span> Sign in with Google
+          </button>
+          <button className="signup-button">
+            <a href="/signup">Sign Up</a>
+          </button>
+        </div>
+        {/* Entfernen des zweiten Sign Up Buttons hier */}
         <p className="login-footer">
           Don’t have an account? <a href="/signup">Sign up</a>
         </p>

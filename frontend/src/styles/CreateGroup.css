@@ -79,3 +79,50 @@
     padding: 8px;
     border-radius: 4px;
 }
+/* Responsivität */
+@media (max-width: 768px) {
+    .create-group-title {
+      font-size: 2em;
+    }
+  
+    .create-group-button {
+      font-size: 1rem;
+      padding: 0.8em 1.5em;
+    }
+  
+    .rank-toggle-label {
+      font-size: 1.1rem;
+    }
+  
+    .create-group-container {
+      padding: 1.5rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .create-group-title {
+      font-size: 1.8em;
+    }
+  
+    .rank-toggle-label {
+      font-size: 1rem;
+    }
+  
+    .create-group-button {
+      font-size: 1rem;
+      padding: 0.8em 1.5em;
+    }
+  
+    .create-group-page {
+      padding: 1rem;
+    }
+  
+    .rank-toggle {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  
+    .rank-toggle-checkbox {
+      margin-top: 0.5rem;
+    }
+  }

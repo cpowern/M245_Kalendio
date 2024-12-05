@@ -50,3 +50,30 @@ body, html {
     background: #e3f2fd; /* Light blue hover effect */
     transform: scale(1.05); /* Slightly enlarge on hover */
 }
+
+@media (max-width: 768px) {
+    .landing-title {
+      font-size: 2.5rem;
+    }
+  
+    .landing-subtitle {
+      font-size: 1.2rem;
+    }
+  
+    .landing-buttons {
+      width: 80%;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .landing-title {
+      font-size: 2rem;
+    }
+  
+    .landing-subtitle {
+      font-size: 1rem;
+    }
+  
+    .landing-buttons {
+      width: 90%;
+    }}

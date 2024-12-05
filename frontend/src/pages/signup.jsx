@@ -88,9 +88,6 @@ const Signup = () => {
         >
           <span className="google-icon">G</span> Sign up with Google
         </button>
-        <p className="login-footer">
-          Already have an account? <a href="/login">Log in</a>
-        </p>
       </div>
     </div>
   );
