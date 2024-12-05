@@ -18,18 +18,20 @@ const Signup = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/signup', {
+      const response = await axios.post('http://localhost:5001/signup', {
         name,
         email,
         password,
       });
 
       if (response.data.success) {
+        console.log('Signup successful:', response.data.message);
         window.location.href = '/login'; // Redirect to login page
       } else {
         setError(response.data.message || 'Signup failed');
       }
     } catch (err) {
+      console.error('Error during signup:', err);
       setError('An error occurred during signup. Please try again.');
     }
   };

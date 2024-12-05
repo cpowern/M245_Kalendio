@@ -3,10 +3,10 @@ const session = require('express-session');
 const passport = require('passport');
 require('dotenv').config();
 const connectDB = require('./config/db'); // MongoDB connection
-const authRoutes = require('./routes/auth'); // Import the auth routes
+const authRoutes = require('./routes/auth'); // Google auth routes
 
 const app = express();
-const PORT = 5000; // Change this from 5173
+const PORT = 5000;
 
 // Connect to MongoDB
 connectDB();
@@ -18,11 +18,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Routes
-app.use(authRoutes); // Attach authentication routes
+app.use(authRoutes); // Attach Google authentication routes
 
 // Root Route
 app.get('/', (req, res) => {
-    res.send({ message: 'Welcome to the Kalendio API' }); // JSON response for root URL
+    res.send({ message: 'Welcome to the Kalendio API' });
 });
 
 // Protected route example
