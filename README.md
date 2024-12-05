@@ -102,7 +102,7 @@ Kalendio richtet sich speziell an Schüler*innen der KSB. Die App ist darauf aus
 
 ## 📢 Kontakt und Feedback
 Wir freuen uns über dein Feedback und Vorschläge, um Kalendio noch besser zu machen. Kontaktiere uns gerne über:
-- E-Mail: nicolas.haas@ksb-sg.ch
+- E-Mail: kalendio.sup@gmail.com
 
 ---
 
