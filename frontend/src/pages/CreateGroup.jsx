@@ -1,3 +1,4 @@
+// src/pages/CreateGroup.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/CreateGroup.css'; // CSS für CreateGroup hinzufügen
@@ -14,7 +15,7 @@ const CreateGroup = () => {
     } else {
       // Hier kannst du deine Logik zum Erstellen der Gruppe hinzufügen
       alert(`Gruppe "${groupName}" mit ${membersCount} Mitgliedern wurde erstellt!`);
-      navigate('/groupselection'); // Oder wo auch immer du nach dem Erstellen hin navigieren möchtest
+      navigate('/mainpage'); // Navigiere zur mainpage
     }
   };
 
@@ -56,6 +57,18 @@ const CreateGroup = () => {
         <button className="create-group-button" onClick={handleCreateGroup}>
           Gruppe erstellen
         </button>
+        
+        {/* Rangliste anzeigen, falls angekreuzt */}
+        {ranked && (
+          <div className="rank-list">
+            <h3>Rangliste:</h3>
+            <ul>
+              <li>Platz 1 - Max Mustermann</li>
+              <li>Platz 2 - Erika Mustermann</li>
+              <li>Platz 3 - John Doe</li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
