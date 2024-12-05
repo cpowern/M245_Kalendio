@@ -1,0 +1,82 @@
+/* src/styles/CreateGroup.css */
+.create-group-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #9544ff, #c99fff); /* Lila Farbverlauf */
+    padding: 2rem;
+  }
+  
+  .create-group-container {
+    max-width: 400px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .create-group-title {
+    font-size: 2.5em;
+    color: #646cff; /* Blau für den Titel */
+    margin-bottom: 1.5em;
+  }
+  
+  .create-group-input {
+    width: 100%;
+    padding: 0.8em;
+    margin: 1em 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .create-group-button {
+    padding: 0.8em 2em;
+    background-color: #646cff; /* Blau für den Button */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .create-group-button:hover {
+    background-color: #535bf2; /* Dunkleres Blau */
+  }
+  
+  /* Rangliste Auswahl (Checkbox) */
+  .rank-toggle {
+    display: flex;
+    align-items: center;
+    margin: 1rem 0;
+  }
+  
+  .rank-toggle-label {
+    font-size: 1.2rem;
+    margin-right: 10px;
+    color: #333;
+  }
+  
+  .rank-toggle-checkbox {
+    width: 20px;
+    height: 20px;
+  }
+  
+  /* Rangliste anzeigen (falls ausgewählt) */
+  .rank-list {
+    margin-top: 2rem;
+    text-align: center;
+  }
+  
+  .rank-list ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .rank-list li {
+    background-color: #e0e0e0;
+    margin: 5px 0;
+    padding: 8px;
+    border-radius: 4px;
+  }
+  

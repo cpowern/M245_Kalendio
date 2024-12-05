@@ -1,8 +1,9 @@
+// src/pages/Groupselection.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // React Router Hook
 import '../styles/Login.css'; // Wiederverwendung des existierenden CSS
 
-const GroupSelection = () => {
+const Groupselection = () => {
   const [groupCode, setGroupCode] = useState(''); // Zustand für den Gruppencode
   const navigate = useNavigate(); // Initialisierung von useNavigate
 
@@ -15,6 +16,11 @@ const GroupSelection = () => {
     }
   };
 
+  const handleCreateGroup = () => {
+    // Weiterleiten zur Seite, auf der eine neue Gruppe erstellt wird
+    navigate('/creategroup');
+  };
+
   return (
     <div className="login-page">
       <div className="login-container">
@@ -23,7 +29,7 @@ const GroupSelection = () => {
         <div className="group-buttons">
           <button
             className="login-button"
-            onClick={() => alert('Gruppe erstellen ausgewählt')}
+            onClick={handleCreateGroup} // Weiterleiten zur Gruppe-Erstellen-Seite
           >
             Gruppe Erstellen
           </button>
@@ -53,4 +59,4 @@ const GroupSelection = () => {
   );
 };
 
-export default GroupSelection;
+export default Groupselection;

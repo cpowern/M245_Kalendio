@@ -5,7 +5,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #4c2a92; /* Lila Hintergrund für die gesamte Seite */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -18,67 +18,246 @@ a {
   color: #646cff;
   text-decoration: inherit;
 }
+
 a:hover {
   color: #535bf2;
 }
 
 body {
-  background: none; /* Ensure no black background on body hello */
+  background-color: #4c2a92; /* Lila Hintergrund für den gesamten Body */
   margin: 0;
+  padding: 0;
+  color: white; /* Schriftfarbe weiß für den gesamten Text */
 }
 
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  margin: 0;
 }
 
 button {
   border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
+  padding: 0.8em 1.5em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: white; /* Weiße Buttons */
+  color: #4c2a92; /* Lila Schriftfarbe */
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: background-color 0.25s, border-color 0.25s;
 }
+
 button:hover {
-  border-color: #646cff;
+  background-color: #4c2a92; /* Lila Hintergrund beim Hover */
+  color: white; /* Weiße Schriftfarbe beim Hover */
 }
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* ---- Login spezifisches Design ---- */
+.login-page {
+  background-color: #4c2a92; /* Lila Hintergrund für die Login-Seite */
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
 }
 
-#root {
-  padding: 0; /* Remove default padding */
-  margin: 0; /* Remove extra margin */
-  width: 100%; /* Allow full width for child components */
-  height: 100%; /* Match full viewport height */
-  display: flex; /* Add flex behavior to center the app */
-  justify-content: center; /* Center app horizontally */
-  align-items: center; /* Center app vertically */
+.login-container {
+  background-color: white; /* Weißer Container für den Inhalt */
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
   text-align: center;
 }
 
-.card {
-  padding: 2em;
+.login-title {
+  font-size: 2.5em;
+  color: #4c2a92; /* Lila Farbe für den Titel */
+  margin-bottom: 1.5em;
 }
 
-.read-the-docs {
+.login-subtitle {
   color: #888;
+  font-size: 1.2em;
+}
+
+.login-input {
+  width: 100%;
+  padding: 0.8em;
+  margin: 1em 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1em;
+  background-color: #f7f7f7;
+  color: black;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: #4c2a92;
+}
+
+.login-button {
+  padding: 0.8em 2em;
+  background-color: white;
+  color: #4c2a92;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.login-button:hover {
+  background-color: #4c2a92;
+  color: white;
+}
+
+/* ---- CreateGroup spezifisches Design ---- */
+.create-group-page {
+  background-color: #4c2a92; /* Lila Hintergrund für die CreateGroup-Seite */
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+}
+
+.create-group-container {
+  background-color: white; /* Weißer Container für den Inhalt */
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.create-group-title {
+  font-size: 2.5em;
+  color: #4c2a92; /* Lila Farbe für den Titel */
+  margin-bottom: 1.5em;
+}
+
+.create-group-input {
+  width: 100%;
+  padding: 0.8em;
+  margin: 1em 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1em;
+  background-color: #f7f7f7;
+  color: black;
+}
+
+.create-group-input:focus {
+  outline: none;
+  border-color: #4c2a92;
+}
+
+.create-group-button {
+  padding: 0.8em 2em;
+  background-color: white;
+  color: #4c2a92;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.create-group-button:hover {
+  background-color: #4c2a92;
+  color: white;
+}
+
+.create-group-checkbox {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1em 0;
+}
+
+.create-group-checkbox input {
+  margin-right: 0.5em;
+}
+
+.create-group-divider {
+  display: flex;
+  align-items: center;
+  margin: 2em 0;
+}
+
+.create-group-divider span {
+  color: #888;
+}
+
+.create-group-divider .divider-line {
+  flex-grow: 1;
+  height: 1px;
+  background-color: #888;
+  margin: 0 1em;
+}
+
+.create-group-divider .divider-text {
+  font-weight: bold;
+  color: #888;
+}
+
+/* ---- GroupSelection spezifisches Design ---- */
+.group-selection-page {
+  background-color: #4c2a92; /* Lila Hintergrund für die GroupSelection-Seite */
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+}
+
+.group-selection-container {
+  background-color: white; /* Weißer Container für den Inhalt */
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.group-selection-title {
+  font-size: 2.5em;
+  color: #4c2a92; /* Lila Farbe für den Titel */
+  margin-bottom: 1.5em;
+}
+
+.group-selection-input {
+  width: 100%;
+  padding: 0.8em;
+  margin: 1em 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1em;
+  background-color: #f7f7f7;
+  color: black;
+}
+
+.group-selection-input:focus {
+  outline: none;
+  border-color: #4c2a92;
+}
+
+.group-selection-button {
+  padding: 0.8em 2em;
+  background-color: white;
+  color: #4c2a92;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.group-selection-button:hover {
+  background-color: #4c2a92;
+  color: white;
 }
