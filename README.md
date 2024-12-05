@@ -5,26 +5,27 @@ Kalendio ist eine innovative, kollaborative Kalender-App, die speziell für Sch�
 
 ---
 
-## **Struktur**
+## 📂 **Projektstruktur**
 
 ### **Frontend**
-- **Framework**: React (mit Vite erstellt)
+- **Framework**: React (erstellt mit Vite)
 - **Technologien**: JavaScript, React Router, Axios
-- **Dateien/Ordner**:
-  - `/src`: Komponenten, Seiten
-  - `/public`: Statische Dateien
+- **Wichtige Dateien/Ordner**:
+  - `src/`: Enthält Komponenten und Seiten
+  - `public/`: Statische Dateien
   - `vite.config.js`: Konfigurationsdatei
 
 ### **Backend**
 - **System**: Node.js mit Express
-- **Pakete**: `express`, `cors`, `body-parser`, `dotenv`
+- **Genutzte Pakete**: `express`, `cors`, `body-parser`, `dotenv`
 - **Struktur**:
-  - `/routes`: API-Endpunkte (z. B. `exampleRoutes.js`)
-  - `/models`: Datenstrukturen (z. B. `exampleModel.js`)
-  - `/controllers`: Logik (z. B. `exampleController.js`)
-  - `/config`: Datenbank-Verbindungen (optional)
-  - `server.js`: Hauptdatei
+  - `routes/`: API-Endpunkte (z. B. `exampleRoutes.js`)
+  - `models/`: Datenstrukturen (z. B. `exampleModel.js`)
+  - `controllers/`: Geschäftslogik (z. B. `exampleController.js`)
+  - `config/`: (Optional) Datenbankverbindungen
+  - `server.js`: Einstiegspunkt der Backend-Anwendung
 
+ ---
 
 ## ⚙️ Funktionen
 
