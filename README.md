@@ -43,6 +43,16 @@ Kalendio ist eine innovative, kollaborative Kalender-App, die speziell für Sch�
 
 ---
 
+## 🚀 **Projekt starten**
+Um das Kalendio-Projekt lokal auszuführen, folge diesen Schritten:
+
+Öffne ein Terminal und navigiere in den Ordner des Backends:
+```bash
+   cd backend
+```
+
+---
+
 ## 🔖 Zielgruppe
 Kalendio richtet sich speziell an Schüler*innen der KSB. Die App ist darauf ausgelegt, in jeder Klasse eine bessere Organisation und einen klaren Überblick über die Anforderungen des Schulalltags zu schaffen.
 
