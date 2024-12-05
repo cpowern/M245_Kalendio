@@ -43,12 +43,48 @@ Kalendio ist eine innovative, kollaborative Kalender-App, die speziell für Sch�
 
 ---
 
-## 🚀 **Projekt starten**
+🚀 **Projekt starten**
+
 Um das Kalendio-Projekt lokal auszuführen, folge diesen Schritten:
 
+### **1. Backend starten**
+
 Öffne ein Terminal und navigiere in den Ordner des Backends:
+
 ```bash
-   cd backend
+cd backend
+```
+
+Installiere die notwendigen Abhängigkeiten:
+
+```bash
+npm install
+```
+
+Starte den Server:
+
+```bash
+node server.js
+```
+
+### **2. Frontend starten**
+
+Öffne ein neues Terminal und navigiere in den Ordner des Frontends:
+
+```bash
+cd frontend
+```
+
+Installiere die notwendigen Abhängigkeiten:
+
+```bash
+npm install
+```
+
+Starte den Entwicklungsserver:
+
+```bash
+npm run dev
 ```
 
 ---
