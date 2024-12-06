@@ -1,29 +1,27 @@
 const express = require('express');
 const passport = require('passport');
-const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 require('dotenv').config();
 const router = express.Router();
 const calendar = require('../googleCalendar');
 
+// Route to fetch events
 router.get('/events', async (req, res) => {
     try {
         const { data } = await calendar.events.list({
-            calendarId: process.env.GOOGLE_CALENDAR_ID, // Kalender-ID aus .env
+            calendarId: process.env.GOOGLE_CALENDAR_ID,
             timeMin: new Date().toISOString(),
-            timeMax: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(), // Nächste Woche
+            timeMax: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
             singleEvents: true,
             orderBy: 'startTime',
         });
-        res.json(data.items); // Events zurückgeben
+        res.json(data.items);
     } catch (error) {
-        console.error('Fehler beim Abrufen der Events:', error);
-        res.status(500).json({ message: 'Fehler beim Abrufen der Events' });
+        console.error('Error fetching events:', error);
+        res.status(500).json({ message: 'Error fetching events' });
     }
 });
-
-module.exports = router;
 
 // Google OAuth Strategy
 passport.use(
@@ -31,7 +29,7 @@ passport.use(
         {
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: 'http://localhost:5000/auth/google/callback', // Matches Google Cloud Console
+            callbackURL: 'http://localhost:5000/auth/google/callback',
         },
         async (accessToken, refreshToken, profile, done) => {
             try {
@@ -60,52 +58,6 @@ passport.deserializeUser(async (id, done) => {
         done(null, user);
     } catch (err) {
         done(err, null);
-    }
-});
-
-// Signup Route
-router.post('/signup', async (req, res) => {
-    const { name, email, password } = req.body;
-
-    try {
-        // Check if user already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ success: false, message: 'User already exists' });
-        }
-
-        // Create a new user
-        const newUser = new User({ name, email, password });
-        await newUser.save();
-
-        res.status(201).json({ success: true, message: 'User created successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
-
-// Login Route
-router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-
-    try {
-        // Check if the user exists
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
-
-        // Compare passwords
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-
-        res.status(200).json({ success: true, message: 'Login successful', user });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
