@@ -24,6 +24,7 @@
 .create-group-title {
   font-size: 2rem;
   margin-bottom: 0.5rem;
+  color: white;
 }
 
 .create-group-input {
@@ -104,7 +105,7 @@
   width: 100%; /* Sicherstellen, dass das Input-Feld die ganze Breite des Containers einnimmt */
   padding: 0.8rem; /* Padding im Input-Feld für bessere Lesbarkeit */
   border-radius: 8px; /* Abgerundete Ecken */
-  background-color: rgba(255, 255, 255, 0.1); /* Hellerer Hintergrund */
+  background-color: rgba(244, 51, 231, 0.1); /* Hellerer Hintergrund */
   color: white; /* Weiße Schrift */
   border: 1px solid rgba(255, 255, 255, 0.6); /* Helle Border */
   transition: background-color 0.3s ease, border-color 0.3s ease;
