@@ -1,128 +1,126 @@
 /* src/styles/CreateGroup.css */
 .create-group-page {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background: linear-gradient(135deg, #9544ff, #c99fff); /* Lila Farbverlauf */
-    padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #9544ff, #c99fff); /* Lila Farbverlauf */
+  color: white;
+  font-family: var(--font-family);
 }
 
 .create-group-container {
-    max-width: 400px;
-    margin: 0 auto;
-    background-color: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.7); /* Transparenter Hintergrund */
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
 }
 
 .create-group-title {
-    font-size: 2.5em;
-    color: #646cff; /* Blau für den Titel */
-    margin-bottom: 1.5em;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .create-group-input {
-    width: 100%;
-    padding: 0.8em;
-    margin: 1em 0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: white;
+}
+
+.create-group-input:focus {
+  border-color: white;
+  outline: none;
 }
 
 .create-group-button {
-    padding: 0.8em 2em;
-    background-color: #646cff; /* Blau für den Button */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  background-color: white;
+  color: #4facfe;
+  border-radius: 8px;
+  padding: 0.8rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .create-group-button:hover {
-    background-color: #535bf2; /* Dunkleres Blau */
+  background-color: #e3f2fd;
+  transform: scale(1.05);
 }
 
-/* Rangliste Auswahl (Checkbox) */
+/* Rangliste Checkbox Bereich */
 .rank-toggle {
-    display: flex;
-    align-items: center;
-    margin: 1rem 0;
-}
-
-.rank-toggle-label {
-    font-size: 1.2rem;
-    margin-right: 10px;
-    color: #333;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
 .rank-toggle-checkbox {
-    width: 20px;
-    height: 20px;
+  cursor: pointer;
+  margin-right: 0.5rem; /* Abstand zwischen Checkbox und Label */
 }
 
-/* Rangliste anzeigen (falls ausgewählt) */
-.rank-list {
-    margin-top: 2rem;
-    text-align: center;
+.rank-toggle-label {
+  font-size: 1.1em;
+  color: white;
+  cursor: pointer;
 }
 
-.rank-list ul {
-    list-style-type: none;
-    padding: 0;
+/* Mitgliederanzahl Label */
+.members-count-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 1rem;
 }
 
-.rank-list li {
-    background-color: #e0e0e0;
-    margin: 5px 0;
-    padding: 8px;
-    border-radius: 4px;
+.members-count-label {
+  font-size: 1.2em; /* Größere Schrift für das Label */
+  color: #c99fff; /* Passende Farbe, die sich gut vom Hintergrund abhebt */
+  font-weight: bold;
+  margin-bottom: 0.5rem; /* Abstand zum Input */
+  transition: color 0.3s ease, transform 0.3s ease;
 }
-/* Responsivität */
-@media (max-width: 768px) {
-    .create-group-title {
-      font-size: 2em;
-    }
-  
-    .create-group-button {
-      font-size: 1rem;
-      padding: 0.8em 1.5em;
-    }
-  
-    .rank-toggle-label {
-      font-size: 1.1rem;
-    }
-  
-    .create-group-container {
-      padding: 1.5rem;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .create-group-title {
-      font-size: 1.8em;
-    }
-  
-    .rank-toggle-label {
-      font-size: 1rem;
-    }
-  
-    .create-group-button {
-      font-size: 1rem;
-      padding: 0.8em 1.5em;
-    }
-  
-    .create-group-page {
-      padding: 1rem;
-    }
-  
-    .rank-toggle {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  
-    .rank-toggle-checkbox {
-      margin-top: 0.5rem;
-    }
-  }
+
+/* Hover und Fokus-Effekte */
+.members-count-label:hover,
+.members-count-label:focus {
+  color: #9544ff; /* Farbe verändert sich beim Hover oder Fokus */
+  transform: scale(1.05); /* Leichtes Vergrößern beim Hover */
+}
+
+/* Optional: Für das Eingabefeld der Mitgliederzahl */
+.create-group-input[type="number"] {
+  width: 100%; /* Sicherstellen, dass das Input-Feld die ganze Breite des Containers einnimmt */
+  padding: 0.8rem; /* Padding im Input-Feld für bessere Lesbarkeit */
+  border-radius: 8px; /* Abgerundete Ecken */
+  background-color: rgba(255, 255, 255, 0.1); /* Hellerer Hintergrund */
+  color: white; /* Weiße Schrift */
+  border: 1px solid rgba(255, 255, 255, 0.6); /* Helle Border */
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Beim Fokussieren des Eingabefeldes */
+.create-group-input[type="number"]:focus {
+  background-color: rgba(255, 255, 255, 0.2); /* Hintergrund wird dunkler */
+  border-color: #9544ff; /* Randfarbe ändert sich zu Lila */
+}
+
+/* Wenn eine Zahl eingegeben wird, Hintergrund ändern */
+.create-group-input[type="number"]:valid {
+  background-color: rgba(255, 255, 255, 0.3); /* Hellerer Hintergrund */
+}
+
+.create-group-input[type="number"]:invalid {
+  background-color: rgba(255, 0, 0, 0.2); /* Roter Hintergrund bei ungültigen Zahlen */
+}
