@@ -41,6 +41,8 @@ Kalendio ist eine innovative, kollaborative Kalender-App, die speziell für Sch�
 - Persönliche und Notizen direkt in Kalendio schreiben.
 - Ideal für Aufgabenbeschreibungen oder zusätzliche Informationen.
 
+### 4. **Termine bestätigen**
+- Eine Funktion bei der man Termine und Einträge bestätigen kann
 ---
 
 🚀 **Projekt starten**
