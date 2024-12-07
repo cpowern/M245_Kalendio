@@ -1,6 +1,7 @@
-// src/pages/CreateGroup.jsx
+//creategroup.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import '../styles/CreateGroup.css'; // CSS für CreateGroup hinzufügen
 
 const CreateGroup = () => {
@@ -9,19 +10,34 @@ const CreateGroup = () => {
   const [ranked, setRanked] = useState(false); // Zustand für das Häkchen der Rangliste
   const navigate = useNavigate();
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (groupName.trim() === '') {
-      alert('Bitte gib einen Gruppennamen ein.');
-    } else {
-      // Hier kannst du deine Logik zum Erstellen der Gruppe hinzufügen
-      alert(`Gruppe "${groupName}" mit ${membersCount} Mitgliedern wurde erstellt!`);
-      navigate('/mainpage'); // Navigiere zur mainpage
+        alert('Bitte gib einen Gruppennamen ein.');
+        return;
+    }
+
+    try {
+      // POST-Request an die Backend-Route senden
+      const response = await axios.post(
+        'http://localhost:5000/auth/create-calendar', 
+        { groupName }, 
+        { withCredentials: true } // Wichtig für Sessions/Cookies
+      );
+
+      if (response.data.success) {
+        alert(`Gruppe "${groupName}" wurde erstellt! Kalender-ID: ${response.data.calendarId}`);
+        console.log('Group Name:', groupName);
+        navigate('/mainpage');
+      }
+    } catch (error) {
+        console.error('Fehler beim Erstellen der Gruppe:', error);
+        alert('Fehler beim Erstellen der Gruppe');
     }
   };
 
-  // Funktion zur Sicherstellung, dass die Anzahl der Mitglieder immer >= 1 ist
+  // Sicherstellen, dass Mitgliederanzahl >= 1 bleibt
   const handleMembersCountChange = (e) => {
-    const value = Math.max(1, e.target.value); // Verhindert, dass der Wert unter 1 geht
+    const value = Math.max(1, e.target.value);
     setMembersCount(value);
   };
 
@@ -48,8 +64,8 @@ const CreateGroup = () => {
             id="members-count"
             className="create-group-input"
             value={membersCount}
-            min="1" // Verhindert das Eingeben von Werten unter 1
-            onChange={handleMembersCountChange} // Verhindert das Eingeben von weniger als 1
+            min="1"
+            onChange={handleMembersCountChange}
           />
         </div>
 
@@ -63,7 +79,7 @@ const CreateGroup = () => {
             onChange={(e) => setRanked(e.target.checked)}
           />
           <label htmlFor="rank-toggle-checkbox" className="rank-toggle-label">
-          ➡ Rangliste
+            ➡ Rangliste
           </label>
         </div>
 

@@ -2,15 +2,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // React Router Hook
 import '../styles/Login.css'; // Wiederverwendung des existierenden CSS
+import axios from 'axios';
 
 const Groupselection = () => {
   const [groupCode, setGroupCode] = useState(''); // Zustand für den Gruppencode
   const navigate = useNavigate(); // Initialisierung von useNavigate
 
-  const handleJoinGroup = () => {
+  const handleJoinGroup = async () => {
     if (groupCode.trim() !== '') {
-      // Wenn ein Code eingegeben wurde, weiterleiten
-      navigate('/mainpage');
+      try {
+        const response = await axios.post('http://localhost:5000/groups/join', {
+          groupCode,
+          userEmail: 'USER_EMAIL', // Hier könnte der Nutzer-Email-Input verwendet werden
+        });
+        alert('Erfolgreich der Gruppe beigetreten!');
+        navigate('/mainpage');
+      } catch (error) {
+        console.error('Fehler beim Beitreten der Gruppe:', error);
+        alert('Fehler beim Beitreten der Gruppe.');
+      }
     } else {
       alert('Bitte geben Sie einen gültigen Code ein.');
     }
@@ -20,6 +30,7 @@ const Groupselection = () => {
     // Weiterleiten zur Seite, auf der eine neue Gruppe erstellt wird
     navigate('/creategroup');
   };
+  
 
   return (
     <div className="login-page">

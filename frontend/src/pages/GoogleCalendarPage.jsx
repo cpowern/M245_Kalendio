@@ -15,11 +15,10 @@ const GoogleCalendarPage = () => {
     }
  
     try {
-      const response = await axios.get(
-        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
+      const response = await axios.post(
+        'http://localhost:5000/api/create-calendar', // Stelle sicher, dass dies zur Route passt
+        { groupName },
+        { headers: { Authorization: `Bearer ${token}` } } // Header korrekt, falls nötig
       );
       setEvents(response.data.items); // Setze die abgerufenen Ereignisse
     } catch (error) {
