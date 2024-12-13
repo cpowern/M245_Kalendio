@@ -6,7 +6,8 @@ const cors = require('cors');
 const passport = require('passport');
 require('dotenv').config();
 const connectDB = require('./config/db');
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./routes/auth'); // Authentication routes
+const apiRoutes = require('./routes/api'); // API routes for calendars, etc.
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,6 +42,9 @@ app.use(passport.session());
 
 // Authentifizierungsrouten
 app.use('/auth', authRoutes);
+
+// API-Routen hinzufügen
+app.use('/api', apiRoutes);
 
 // Root-Route
 app.get('/', (req, res) => {

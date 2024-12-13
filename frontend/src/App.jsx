@@ -9,7 +9,8 @@ import Login from './pages/Login';
 import Groupselection from './pages/Groupselection';
 import MainPage from './pages/MainPage';
 import AddTask from './pages/AddTask';
-import CreateGroup from './pages/CreateGroup'; // Hinzugefügt für Gruppen erstellen
+import CreateGroup from './pages/CreateGroup';
+import GoogleCalendarPage from './pages/GoogleCalendarPage'; 
 
 const App = () => {
   return (
@@ -20,7 +21,8 @@ const App = () => {
         <Route path="/groupselection" element={<Groupselection />} />
         <Route path="/mainpage" element={<MainPage />} />
         <Route path="/addtask" element={<AddTask />} />
-        <Route path="/creategroup" element={<CreateGroup />} /> {/* Route für Gruppen erstellen */}
+        <Route path="/creategroup" element={<CreateGroup />} />
+        <Route path="/google-calendar" element={<GoogleCalendarPage />} />
       </Routes>
     </Router>
   );

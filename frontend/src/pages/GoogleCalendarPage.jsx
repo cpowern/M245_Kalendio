@@ -1,88 +1,89 @@
-// src/pages/GoogleCalendarPage.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import GoogleLoginButton from '../components/GoogleLoginButton';
- 
+
 const GoogleCalendarPage = () => {
+  const [calendars, setCalendars] = useState([]);
+  const [selectedCalendarId, setSelectedCalendarId] = useState(null);
   const [events, setEvents] = useState([]);
-  const [accessToken, setAccessToken] = useState(null);
- 
-  // Kalenderereignisse abrufen
-  const fetchEvents = async () => {
-    if (!accessToken) {
-      alert('Bitte zuerst anmelden!');
-      return;
-    }
- 
-    try {
-      const response = await axios.post(
-        'http://localhost:5000/api/create-calendar', // Stelle sicher, dass dies zur Route passt
-        { groupName },
-        { headers: { Authorization: `Bearer ${token}` } } // Header korrekt, falls nötig
-      );
-      setEvents(response.data.items); // Setze die abgerufenen Ereignisse
-    } catch (error) {
-      console.error('Fehler beim Abrufen der Ereignisse:', error);
-    }
-  };
- 
-  // Neues Ereignis hinzufügen
-  const addEvent = async () => {
-    if (!accessToken) {
-      alert('Bitte zuerst anmelden!');
-      return;
-    }
- 
-    const event = {
-      summary: 'Test Event',
-      location: 'Online',
-      description: 'Dies ist ein Testereignis',
-      start: {
-        dateTime: '2024-11-30T10:00:00Z',
-        timeZone: 'Europe/Berlin',
-      },
-      end: {
-        dateTime: '2024-11-30T12:00:00Z',
-        timeZone: 'Europe/Berlin',
-      },
+
+  // Fetch all calendars on component mount
+  useEffect(() => {
+    const fetchCalendars = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/list-calendars', {
+          withCredentials: true, // Ensures cookies/session are sent
+        });
+        if (response.data.success) {
+          setCalendars(response.data.calendars);
+        } else {
+          console.error('Failed to fetch calendars:', response.data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching calendars:', error);
+      }
     };
- 
+
+    fetchCalendars();
+  }, []);
+
+  // Fetch events for a specific calendar
+  const fetchEvents = async (calendarId) => {
     try {
-      const response = await axios.post(
-        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
-        event,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      console.log('Ereignis hinzugefügt:', response.data);
-      fetchEvents(); // Aktualisiere die Liste der Ereignisse
+      const response = await axios.get(`http://localhost:5000/api/events/${calendarId}`, {
+        withCredentials: true,
+      });
+      if (response.data.success) {
+        setEvents(response.data.events);
+      } else {
+        console.error('Failed to fetch events:', response.data.message);
+      }
     } catch (error) {
-      console.error('Fehler beim Hinzufügen des Ereignisses:', error);
+      console.error('Error fetching events:', error);
     }
   };
- 
+
+  // Handle calendar selection
+  const handleCalendarSelect = (calendarId) => {
+    setSelectedCalendarId(calendarId);
+    fetchEvents(calendarId); // Fetch events for the selected calendar
+  };
+
   return (
-<div>
-<h1>Google Calendar Integration</h1>
-      {!accessToken ? (
-<GoogleLoginButton onLoginSuccess={setAccessToken} />
-      ) : (
-<>
-<button onClick={fetchEvents}>Ereignisse abrufen</button>
-<button onClick={addEvent}>Neues Ereignis hinzufügen</button>
-</>
+    <div style={{ padding: '20px' }}>
+      <h1 style={{ textAlign: 'center' }}>Google Calendar Integration</h1>
+      <h2>Your Calendars</h2>
+      <ul>
+        {calendars.length > 0 ? (
+          calendars.map((calendar) => (
+            <li key={calendar.id} style={{ marginBottom: '10px', cursor: 'pointer' }}>
+              <button onClick={() => handleCalendarSelect(calendar.id)}>
+                {calendar.summary} ({calendar.timeZone || 'No Timezone'})
+              </button>
+            </li>
+          ))
+        ) : (
+          <p>No calendars found.</p>
+        )}
+      </ul>
+
+      {selectedCalendarId && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>Events for Calendar: {selectedCalendarId}</h3>
+          <ul>
+            {events.length > 0 ? (
+              events.map((event) => (
+                <li key={event.id}>
+                  {event.summary} - {new Date(event.start.dateTime || event.start.date).toLocaleString()}
+                </li>
+              ))
+            ) : (
+              <p>No events found for this calendar.</p>
+            )}
+          </ul>
+        </div>
       )}
-<h2>Ereignisse:</h2>
-<ul>
-        {events.map((event) => (
-<li key={event.id}>
-            {event.summary} - {event.start?.dateTime || 'Kein Datum'}
-</li>
-        ))}
-</ul>
-</div>
+    </div>
   );
 };
- 
+
 export default GoogleCalendarPage;
-
-
