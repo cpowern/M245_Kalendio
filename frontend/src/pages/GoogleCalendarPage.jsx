@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
 
 const GoogleCalendarPage = () => {
   const [calendars, setCalendars] = useState([]);
@@ -33,7 +35,13 @@ const GoogleCalendarPage = () => {
         withCredentials: true,
       });
       if (response.data.success) {
-        setEvents(response.data.events);
+        // Format events for FullCalendar
+        const formattedEvents = response.data.events.map((event) => ({
+          title: event.summary,
+          start: event.start.dateTime || event.start.date,
+          end: event.end?.dateTime || event.end?.date,
+        }));
+        setEvents(formattedEvents);
       } else {
         console.error('Failed to fetch events:', response.data.message);
       }
@@ -69,17 +77,11 @@ const GoogleCalendarPage = () => {
       {selectedCalendarId && (
         <div style={{ marginTop: '20px' }}>
           <h3>Events for Calendar: {selectedCalendarId}</h3>
-          <ul>
-            {events.length > 0 ? (
-              events.map((event) => (
-                <li key={event.id}>
-                  {event.summary} - {new Date(event.start.dateTime || event.start.date).toLocaleString()}
-                </li>
-              ))
-            ) : (
-              <p>No events found for this calendar.</p>
-            )}
-          </ul>
+          <FullCalendar
+            plugins={[dayGridPlugin]}
+            initialView="dayGridMonth"
+            events={events} // Display fetched events
+          />
         </div>
       )}
     </div>
