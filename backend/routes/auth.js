@@ -49,7 +49,19 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // Authentifizierungsrouten
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get(
+    '/google',
+    passport.authenticate('google', {
+        scope: [
+            'https://www.googleapis.com/auth/calendar', // Google Calendar API - Vollzugriff
+            'profile', // Zugriff auf grundlegende Profildaten
+            'email', // Zugriff auf E-Mail-Adresse
+        ],
+        accessType: 'offline', // Refresh Token anfordern
+        prompt: 'consent', // Nutzeraufforderung erzwingen
+    })
+);
+
 router.get(
     '/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),

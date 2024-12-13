@@ -1,15 +1,16 @@
-//googlecalendar.js
+//*googleCalendar.js*
 const { google } = require('googleapis');
 
-// Google OAuth-Client mit Refresh Token
+// Funktion: Erstelle einen neuen Google OAuth2-Client
 const getAuthClient = () => {
     const auth = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET
     );
 
+    // Initialisiere den Client mit dem Refresh Token aus der Umgebungsvariable
     auth.setCredentials({
-        refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+        refresh_token: process.env.REFRESHTOKEN, // Stelle sicher, dass REFRESHTOKEN korrekt ist
     });
 
     return auth;
@@ -17,7 +18,7 @@ const getAuthClient = () => {
 
 // Kalender erstellen
 const createCalendar = async (groupName) => {
-    const auth = getAuthClient();
+    const auth = getAuthClient(); // Hole den Auth-Client
     const calendar = google.calendar({ version: 'v3', auth });
 
     try {
@@ -35,7 +36,7 @@ const createCalendar = async (groupName) => {
 
 // Rechte für Kalender setzen
 const shareCalendar = async (calendarId, userEmail) => {
-    const auth = getAuthClient();
+    const auth = getAuthClient(); // Hole den Auth-Client
     const calendar = google.calendar({ version: 'v3', auth });
 
     try {
