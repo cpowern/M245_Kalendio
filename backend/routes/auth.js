@@ -130,7 +130,6 @@ router.get('/list-calendars', async (req, res) => {
     }
 });
 
-
 // List events for a specific calendar
 router.get('/events/:calendarId', async (req, res) => {
     const { calendarId } = req.params;
@@ -150,20 +149,29 @@ router.get('/events/:calendarId', async (req, res) => {
 
     const calendar = google.calendar({ version: 'v3', auth });
 
+    console.log(`Fetching events for calendarId: ${calendarId}`); // Debug log
+
     try {
         const response = await calendar.events.list({
             calendarId,
-            timeMin: new Date().toISOString(),
-            maxResults: 10,
+            timeMin: new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString(), // Fetch events from 1 year ago
+            timeMax: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(), // Fetch events up to 1 year in the future
+            maxResults: 100, // Increase max results for testing
             singleEvents: true,
             orderBy: 'startTime',
         });
-        console.log('Fetched events:', response.data.items); // Log for debugging
+
+        if (response.data.items.length === 0) {
+            console.log(`No events found for calendarId: ${calendarId}`);
+        }
+
         res.status(200).json({ success: true, events: response.data.items });
     } catch (error) {
         console.error('Error fetching events:', error.message);
         res.status(500).json({ success: false, message: 'Error fetching events' });
     }
 });
+
+
 
 module.exports = router;
