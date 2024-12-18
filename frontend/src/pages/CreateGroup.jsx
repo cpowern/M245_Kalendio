@@ -1,4 +1,3 @@
-//creategroup.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -8,30 +7,31 @@ const CreateGroup = () => {
   const [groupName, setGroupName] = useState('');
   const [membersCount, setMembersCount] = useState(1); // Initialwert 1 für Mitglieder
   const [ranked, setRanked] = useState(false); // Zustand für das Häkchen der Rangliste
+  const [generatedCode, setGeneratedCode] = useState(''); // Zeige den generierten Code an
   const navigate = useNavigate();
 
   const handleCreateGroup = async () => {
     if (groupName.trim() === '') {
-        alert('Bitte gib einen Gruppennamen ein.');
-        return;
+      alert('Bitte gib einen Gruppennamen ein.');
+      return;
     }
 
     try {
       // POST-Request an die Backend-Route senden
       const response = await axios.post(
-        'http://localhost:5000/auth/create-calendar', 
-        { groupName }, 
+        'http://localhost:5000/auth/create-calendar',
+        { groupName },
         { withCredentials: true } // Wichtig für Sessions/Cookies
       );
 
       if (response.data.success) {
-        alert(`Gruppe "${groupName}" wurde erstellt! Kalender-ID: ${response.data.calendarId}`);
+        setGeneratedCode(response.data.groupCode); // Speichere den Code
+        alert(`Gruppe "${groupName}" wurde erstellt! Teilen Sie diesen Code: ${response.data.groupCode}`);
         console.log('Group Name:', groupName);
-        navigate('/mainpage');
       }
     } catch (error) {
-        console.error('Fehler beim Erstellen der Gruppe:', error);
-        alert('Fehler beim Erstellen der Gruppe');
+      console.error('Fehler beim Erstellen der Gruppe:', error);
+      alert('Fehler beim Erstellen der Gruppe');
     }
   };
 
@@ -53,7 +53,7 @@ const CreateGroup = () => {
           value={groupName}
           onChange={(e) => setGroupName(e.target.value)}
         />
-        
+
         {/* Label für Mitgliederanzahl */}
         <div className="members-count-container">
           <label htmlFor="members-count" className="members-count-label">
@@ -86,6 +86,14 @@ const CreateGroup = () => {
         <button className="create-group-button" onClick={handleCreateGroup}>
           Gruppe erstellen
         </button>
+
+        {/* Zeige den generierten Code an */}
+        {generatedCode && (
+          <div className="group-code-display" style={{ marginTop: '20px', textAlign: 'center' }}>
+            <p>Teile diesen Code, um der Gruppe beizutreten:</p>
+            <h2 style={{ fontWeight: 'bold', color: '#4CAF50' }}>{generatedCode}</h2>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-//server.js
 const express = require('express');
 const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
@@ -12,10 +11,10 @@ const apiRoutes = require('./routes/api'); // API routes for calendars, etc.
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Verbinde mit MongoDB
+// Connect to MongoDB
 connectDB();
 
-// MongoDB-Store für Sessions
+// MongoDB-Store for Sessions
 const store = new MongoDBStore({
     uri: process.env.MONGO_URI,
     collection: 'sessions',
@@ -26,30 +25,36 @@ store.on('error', (error) => {
 });
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: 'http://localhost:5173', credentials: true })); // Enable credentials
 app.use(express.json());
 app.use(
     session({
         secret: 'secret',
         resave: false,
         saveUninitialized: false,
-        store: store,
-        cookie: { maxAge: 1000 * 60 * 60 * 24 }, // 1 Tag
+        store: store, // MongoDB store
+        cookie: { maxAge: 1000 * 60 * 60 * 24 }, // 1 day
     })
 );
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Authentifizierungsrouten
+
+// Authentication Routes
 app.use('/auth', authRoutes);
 
-// API-Routen hinzufügen
+// API Routes for calendars and group functionality
 app.use('/api', apiRoutes);
 
-// Root-Route
+// Root Route
 app.get('/', (req, res) => {
     res.send({ message: 'Welcome to the Kalendio API' });
 });
 
-// Server starten
+// Handle unauthorized requests
+app.use((req, res, next) => {
+    res.status(401).send({ message: 'Unauthorized request' });
+});
+
+// Start the Server
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
