@@ -226,3 +226,61 @@
     width: 90%;
   }
 }
+
+/* Kalendercontainer */
+.calendar-container {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-height: 800px;
+  max-width: 52%;
+  margin: auto; /* Zentriert den Kalender */
+  overflow: hidden; /* Verhindert Überlauf */
+  color: #3f3f3f;
+  border: 5px solid #9544ff; /* Lilaner Rand */
+}
+
+/* Kalender */
+.react-calendar {
+  width: 100%;
+  max-width: 600px;
+  border: none;
+  font-family: Arial, sans-serif;
+  font-size: 1rem;
+}
+
+.react-calendar__tile {
+  height: 75px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 5px;
+  border-radius: 8px;
+  color: black; /* Standardfarbe für alle Tage */
+}
+
+.react-calendar__tile--now {
+  background: #9544ff;
+  color: black; /* Aktueller Tag - Zahlen schwarz */
+  border-radius: 8px;
+}
+
+.react-calendar__tile--active {
+  background: #5e0bff;
+  color: white; /* Zahlen weiß, wenn aktiv ausgewählt */
+  border-radius: 8px;
+}
+
+/* Tage der Woche und Monatsnamen */
+.react-calendar__month-view__weekdays {
+  font-weight: bold;
+  color: black; /* Wochentage schwarz */
+}
+
+.react-calendar__navigation button {
+  color: black; /* Monat-Navigation schwarz */
+  font-weight: bold;
+  font-size: 1rem;
+}
