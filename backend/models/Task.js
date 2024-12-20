@@ -16,6 +16,9 @@ const TaskSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  time: {
+    type: String, // neu hinzugefügt, optional
+  },
   createdAt: {
     type: Date,
     default: Date.now,

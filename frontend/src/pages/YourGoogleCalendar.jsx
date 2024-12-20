@@ -1,19 +1,21 @@
+// YourGoogleCalendar.jsx
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import '../styles/MainPage.css';
 
 const YourGoogleCalendar = () => {
-  const [events, setEvents] = useState([]); // Unified events list
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [calendarName, setCalendarName] = useState('Your Google Calendar'); // Default name
-  const [showTaskForm, setShowTaskForm] = useState(false); // To toggle task creation form
-  const [newTask, setNewTask] = useState({ title: '', description: '', date: '' });
-  const [selectedEvent, setSelectedEvent] = useState(null); // For displaying event details in a modal
-  const [showModal, setShowModal] = useState(false); // Toggle modal visibility
+  const [calendarName, setCalendarName] = useState('Your Google Calendar');
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [newTask, setNewTask] = useState({ title: '', description: '', date: '', time: '' });
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showModal, setShowModal] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { groupCode, calendarId } = location.state || {};
 
   useEffect(() => {
@@ -47,7 +49,7 @@ const YourGoogleCalendar = () => {
 
         const dbTasks = taskResponse.data.success
           ? taskResponse.data.tasks.map((task) => ({
-              id: task._id, // Use the database _id
+              id: task._id,
               title: task.title,
               start: task.date,
               end: task.date,
@@ -56,7 +58,6 @@ const YourGoogleCalendar = () => {
             }))
           : [];
 
-        // Combine and deduplicate events by ID
         const uniqueEvents = [...googleEvents, ...dbTasks].reduce((acc, current) => {
           if (!acc.find((event) => event.id === current.id)) {
             acc.push(current);
@@ -142,6 +143,7 @@ const YourGoogleCalendar = () => {
           title: newTask.title,
           description: newTask.description,
           date: newTask.date,
+          time: newTask.time.trim() === '' ? '' : newTask.time,
         },
         { withCredentials: true }
       );
@@ -149,9 +151,8 @@ const YourGoogleCalendar = () => {
       if (response.data.success) {
         alert('Task created successfully!');
         setShowTaskForm(false);
-        setNewTask({ title: '', description: '', date: '' });
+        setNewTask({ title: '', description: '', date: '', time: '' });
 
-        // Add new task to events
         setEvents((prevEvents) => [
           ...prevEvents,
           {
@@ -227,6 +228,27 @@ const YourGoogleCalendar = () => {
             >
               {showTaskForm ? 'Cancel' : 'Create Task'}
             </button>
+            
+            <button
+              onClick={() => navigate('/day-view', {
+                state: {
+                  calendarId: calendarId,
+                  selectedDate: new Date().toISOString().split('T')[0]
+                }
+              })}
+              style={{
+                marginTop: '20px',
+                marginLeft: '10px',
+                padding: '10px 20px',
+                backgroundColor: '#2196F3',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              To the Day View
+            </button>
+            
             {showTaskForm && (
               <div
                 style={{
@@ -269,6 +291,16 @@ const YourGoogleCalendar = () => {
                     onChange={(e) => setNewTask({ ...newTask, date: e.target.value })}
                     required
                     style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
+                  />
+                </div>
+                <div>
+                  <label>Time (optional):</label>
+                  <input
+                    type="time"
+                    value={newTask.time}
+                    onChange={(e) => setNewTask({ ...newTask, time: e.target.value })}
+                    style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
+                    placeholder="Optional, default 12:00"
                   />
                 </div>
                 <button

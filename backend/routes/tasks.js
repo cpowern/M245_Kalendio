@@ -1,20 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const Task = require('../models/Task'); // Task model
-const Calendar = require('../models/Calendar'); // Calendar model
-
-// Create a task
+const Task = require('../models/Task');
 const { google } = require('googleapis');
 
 router.post('/create-task', async (req, res) => {
-  const { calendarId, title, description, date } = req.body;
+  const { calendarId, title, description, date, time } = req.body;
 
   if (!calendarId || !title || !date) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
   try {
-    console.log('Creating task:', { calendarId, title, description, date });
+    console.log('Creating task:', { calendarId, title, description, date, time });
 
     const auth = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
@@ -24,16 +21,24 @@ router.post('/create-task', async (req, res) => {
 
     const calendar = google.calendar({ version: 'v3', auth });
 
-    // Add event to Google Calendar
+    // Wenn keine Zeit angegeben, nutze 12:00 als Standard
+    const chosenTime = time && time.trim() !== '' ? time : '12:00';
+
+    const [hours, minutes] = chosenTime.split(':');
+    const startDate = new Date(date);
+    startDate.setHours(hours, minutes || 0, 0, 0);
+    const endDate = new Date(startDate.getTime() + 3600000); // +1 Stunde
+
+    // Google Kalender Event
     const event = {
       summary: title,
       description,
       start: {
-        dateTime: new Date(date).toISOString(),
-        timeZone: 'Europe/Zurich', // Adjust to your timezone
+        dateTime: startDate.toISOString(),
+        timeZone: 'Europe/Zurich', 
       },
       end: {
-        dateTime: new Date(new Date(date).getTime() + 3600000).toISOString(), // 1 hour duration
+        dateTime: endDate.toISOString(),
         timeZone: 'Europe/Zurich',
       },
     };
@@ -45,12 +50,13 @@ router.post('/create-task', async (req, res) => {
 
     console.log('Task added to Google Calendar:', event);
 
-    // Save to MongoDB
+    // Speichere in MongoDB
     const task = await Task.create({
       calendarId,
       title,
       description,
-      date: new Date(date),
+      date: startDate, // enthält Datum und Zeit
+      time: chosenTime, // hier explizit die Zeit speichern
     });
 
     console.log('Task created:', task);
@@ -60,6 +66,8 @@ router.post('/create-task', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error creating task' });
   }
 });
+
+// Die anderen Routen bleiben unverändert.
 
 // In routes/tasks.js
 router.delete('/delete-task/:id', async (req, res) => {

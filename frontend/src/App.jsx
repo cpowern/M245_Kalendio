@@ -12,6 +12,7 @@ import GoogleCalendarPage from './pages/GoogleCalendarPage';
 import YourGoogleCalendar from './pages/YourGoogleCalendar';
 import ShowTask from './pages/ShowTask';
 import TestTaskCreation from './pages/TestTaskCreation'; // Adjust path as needed
+import DayView from './pages/DayViewWithHours';
 
 
 const App = () => {
@@ -27,6 +28,7 @@ const App = () => {
         <Route path="/your-google-calendar" element={<YourGoogleCalendar />} />
         <Route path="/show-task" element={<ShowTask />} /> {/* Fixed route */}
         <Route path="/test-task" element={<TestTaskCreation />} />
+        <Route path="/day-view" element={<DayView/>} />
       </Routes>
     </Router>
   );
