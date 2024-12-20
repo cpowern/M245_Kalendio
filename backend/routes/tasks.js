@@ -67,8 +67,6 @@ router.post('/create-task', async (req, res) => {
   }
 });
 
-// Die anderen Routen bleiben unverändert.
-
 // In routes/tasks.js
 router.delete('/delete-task/:id', async (req, res) => {
   try {
@@ -79,12 +77,33 @@ router.delete('/delete-task/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Task not found' });
     }
 
+    // Delete corresponding Google Calendar event
+    const auth = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET
+    );
+    auth.setCredentials({ refresh_token: process.env.REFRESHTOKEN });
+
+    const calendar = google.calendar({ version: 'v3', auth });
+
+    try {
+      await calendar.events.delete({
+        calendarId: deletedTask.calendarId,
+        eventId: deletedTask._id.toString(),
+      });
+      console.log('Google Calendar event deleted');
+    } catch (error) {
+      console.error('Error deleting Google Calendar event:', error.message);
+      // Handle cases where the event doesn't exist in Google Calendar
+    }
+
     res.status(200).json({ success: true, message: 'Task deleted successfully' });
   } catch (error) {
     console.error('Error deleting task:', error.message);
     res.status(500).json({ success: false, message: 'Error deleting task' });
   }
 });
+
 
 
 
