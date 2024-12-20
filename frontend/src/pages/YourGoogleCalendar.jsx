@@ -37,6 +37,7 @@ const YourGoogleCalendar = () => {
               start: event.start.dateTime || event.start.date,
               end: event.end?.dateTime || event.end?.date,
               description: event.description || 'No description',
+              isGoogleEvent: true,
             }))
           : [];
 
@@ -46,15 +47,24 @@ const YourGoogleCalendar = () => {
 
         const dbTasks = taskResponse.data.success
           ? taskResponse.data.tasks.map((task) => ({
-              id: task._id,
+              id: task._id, // Use the database _id
               title: task.title,
               start: task.date,
               end: task.date,
               description: task.description,
+              isGoogleEvent: false,
             }))
           : [];
 
-        setEvents([...googleEvents, ...dbTasks]);
+        // Combine and deduplicate events by ID
+        const uniqueEvents = [...googleEvents, ...dbTasks].reduce((acc, current) => {
+          if (!acc.find((event) => event.id === current.id)) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+
+        setEvents(uniqueEvents);
       } catch (error) {
         console.error('Error fetching events and tasks:', error);
       } finally {
@@ -97,6 +107,7 @@ const YourGoogleCalendar = () => {
       title: event.title,
       date: event.startStr,
       description: event.extendedProps?.description || 'No description available',
+      isGoogleEvent: event.extendedProps?.isGoogleEvent,
     });
     setShowModal(true);
   };
@@ -149,6 +160,7 @@ const YourGoogleCalendar = () => {
             start: response.data.task.date,
             end: response.data.task.date,
             description: response.data.task.description,
+            isGoogleEvent: false,
           },
         ]);
       } else {
@@ -166,8 +178,26 @@ const YourGoogleCalendar = () => {
         <h1>{calendarName}</h1>
         {groupCode && (
           <div className="group-code-display" style={{ position: 'absolute', top: 20, right: 20 }}>
-            <p>
+            <p style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               Group Code: <strong>{groupCode}</strong>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(groupCode);
+                  alert('Group Code copied to clipboard!');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title="Copy Group Code"
+              >
+                📋
+              </button>
             </p>
           </div>
         )}
@@ -222,9 +252,7 @@ const YourGoogleCalendar = () => {
                   <label>Description:</label>
                   <textarea
                     value={newTask.description}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, description: e.target.value })
-                    }
+                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                     style={{
                       width: '100%',
                       marginBottom: '10px',
@@ -284,6 +312,22 @@ const YourGoogleCalendar = () => {
           <p>
             <strong>Description:</strong> {selectedEvent.description}
           </p>
+          {!selectedEvent.isGoogleEvent && (
+            <button
+              onClick={() => handleDeleteTask(selectedEvent.id)}
+              style={{
+                marginTop: '10px',
+                padding: '10px 20px',
+                backgroundColor: '#FF6347',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                marginLeft: '10px',
+              }}
+            >
+              Delete Task
+            </button>
+          )}
           <button
             onClick={() => setShowModal(false)}
             style={{
@@ -293,23 +337,10 @@ const YourGoogleCalendar = () => {
               color: 'white',
               border: 'none',
               cursor: 'pointer',
-            }}
-          >
-            Close
-          </button>
-          <button
-            onClick={() => handleDeleteTask(selectedEvent.id)}
-            style={{
-              marginTop: '10px',
-              padding: '10px 20px',
-              backgroundColor: '#FF6347',
-              color: 'white',
-              border: 'none',
-              cursor: 'pointer',
               marginLeft: '10px',
             }}
           >
-            Delete Task
+            Close
           </button>
         </div>
       )}
