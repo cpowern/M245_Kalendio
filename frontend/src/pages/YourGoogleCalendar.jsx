@@ -48,24 +48,49 @@ const YourGoogleCalendar = () => {
         );
 
         const dbTasks = taskResponse.data.success
-          ? taskResponse.data.tasks.map((task) => ({
+        ? taskResponse.data.tasks.map((task) => {
+            return {
               id: task._id,
               title: task.title,
               start: task.date,
               end: task.date,
               description: task.description,
               isGoogleEvent: false,
-            }))
-          : [];
+              time: task.time || '12:00', // falls aus irgendeinem Grund nicht vorhanden
+            };
+          })
+        : [];
+      
+        const combinedEvents = [...googleEvents, ...dbTasks];
 
-        const uniqueEvents = [...googleEvents, ...dbTasks].reduce((acc, current) => {
-          if (!acc.find((event) => event.id === current.id)) {
-            acc.push(current);
+        // Map für einzigartige Events nach Titel+Datum
+        const eventMap = new Map();
+
+        for (const event of combinedEvents) {
+          const eventDate = new Date(event.start).toISOString().split('T')[0];
+          const key = `${event.title}|${eventDate}`;
+
+          if (!eventMap.has(key)) {
+            // Noch kein Event mit diesem Titel und Datum eingetragen, füge es hinzu
+            eventMap.set(key, event);
+          } else {
+            // Es gibt schon ein Event mit gleichem Titel und Datum
+            const existing = eventMap.get(key);
+            // Wenn das bestehende ein Google-Event ist und das neue ein DB-Event, ersetzen wir es.
+            // So stellen wir sicher, dass wir am Ende ein DB-Event behalten, welches löschbar ist.
+            if (existing.isGoogleEvent && !event.isGoogleEvent) {
+              eventMap.set(key, event);
+            }
+            // Wenn beide DB-Events sind, können wir eines behalten, z. B. das erste.
+            // Wenn beide Google-Events sind, ebenfalls einfach das erste behalten.
+            // In diesem Beispiel machen wir nichts weiter.
           }
-          return acc;
-        }, []);
+        }
 
+        const uniqueEvents = Array.from(eventMap.values());
         setEvents(uniqueEvents);
+
+        
       } catch (error) {
         console.error('Error fetching events and tasks:', error);
       } finally {
@@ -117,9 +142,9 @@ const YourGoogleCalendar = () => {
     try {
       const response = await axios.delete(`http://localhost:5000/tasks/delete-task/${taskId}`);
       if (response.data.success) {
-        alert('Task deleted successfully!');
         setEvents((prevEvents) => prevEvents.filter((event) => event.id !== taskId));
         setShowModal(false);
+        alert('Task deleted successfully!');
       } else {
         alert('Failed to delete task.');
       }
@@ -127,7 +152,7 @@ const YourGoogleCalendar = () => {
       console.error('Error deleting task:', error);
       alert('Error deleting task.');
     }
-  };
+  };  
 
   const handleCreateTask = async () => {
     if (!newTask.title || !newTask.date) {

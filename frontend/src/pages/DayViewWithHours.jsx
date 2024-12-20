@@ -61,29 +61,42 @@ const DayViewWithHours = () => {
         );
 
         const dbTasks = taskResponse.data.success
-          ? taskResponse.data.tasks.map((task) => {
-              const start = task.date;
-              return {
-                id: task._id,
-                title: task.title,
-                start: start,
-                end: start,
-                description: task.description,
-                isGoogleEvent: false,
-                time: 'All Day', // Falls man es genauer haben möchte, könnte man Zeit hinzunehmen. 
-              };
-            })
-          : [];
+        ? taskResponse.data.tasks.map((task) => {
+            return {
+              id: task._id,
+              title: task.title,
+              start: task.date,
+              end: task.date,
+              description: task.description,
+              isGoogleEvent: false,
+              time: task.time || '12:00', // falls aus irgendeinem Grund nicht vorhanden
+            };
+          })
+        : [];
+      
 
         const combinedEvents = [...googleEvents, ...dbTasks];
 
+        // Hier die gleiche Deduplizierungs-Logik wie in YourGoogleCalendar.jsx:
+        const uniqueEvents = combinedEvents.reduce((acc, current) => {
+          const duplicate = acc.find(evt =>
+            evt.title === current.title &&
+            new Date(evt.start).toISOString() === new Date(current.start).toISOString()
+          );
+          if (!duplicate) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+
         // Events nach aktuellem Datum filtern
-        const filteredEvents = combinedEvents.filter((event) => {
+        const filteredEvents = uniqueEvents.filter((event) => {
           const eventDate = new Date(event.start).toISOString().split('T')[0];
           return eventDate === currentDate;
         });
 
         setEvents(filteredEvents);
+
       } catch (error) {
         console.error('Error fetching day events:', error);
       } finally {
@@ -163,13 +176,9 @@ const DayViewWithHours = () => {
                   <div className="hour-events">
                   {events
                     .filter((event) => {
-                      if (event.time === 'All Day') {
-                        return hour === '0:00'; 
-                      } else {
-                        const eventHour = parseInt(event.time.split(':')[0], 10);
-                        const currentHour = parseInt(hour.split(':')[0], 10);
-                        return eventHour === currentHour;
-                      }
+                      const eventHour = parseInt(event.time.split(':')[0], 10);
+                      const currentHour = parseInt(hour.split(':')[0], 10);
+                      return eventHour === currentHour;
                     })
                     .map((event) => (
                       <div key={event.id} className="event">
