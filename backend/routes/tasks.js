@@ -61,6 +61,23 @@ router.post('/create-task', async (req, res) => {
   }
 });
 
+// In routes/tasks.js
+router.delete('/delete-task/:id', async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    const deletedTask = await Task.findByIdAndDelete(taskId);
+
+    if (!deletedTask) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Task deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting task:', error.message);
+    res.status(500).json({ success: false, message: 'Error deleting task' });
+  }
+});
+
 
 
 

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import FullCalendar from '@fullcalendar/react';
@@ -12,7 +11,8 @@ const YourGoogleCalendar = () => {
   const [calendarName, setCalendarName] = useState('Your Google Calendar'); // Default name
   const [showTaskForm, setShowTaskForm] = useState(false); // To toggle task creation form
   const [newTask, setNewTask] = useState({ title: '', description: '', date: '' });
-  const navigate = useNavigate();
+  const [selectedEvent, setSelectedEvent] = useState(null); // For displaying event details in a modal
+  const [showModal, setShowModal] = useState(false); // Toggle modal visibility
   const location = useLocation();
   const { groupCode, calendarId } = location.state || {};
 
@@ -25,7 +25,6 @@ const YourGoogleCalendar = () => {
       }
 
       try {
-        // Fetch Google Calendar events
         const googleResponse = await axios.get(
           `http://localhost:5000/auth/events/${calendarId}`,
           { withCredentials: true }
@@ -37,11 +36,10 @@ const YourGoogleCalendar = () => {
               title: event.summary || 'No Title',
               start: event.start.dateTime || event.start.date,
               end: event.end?.dateTime || event.end?.date,
-              source: 'google', // Mark as Google event
+              description: event.description || 'No description',
             }))
           : [];
 
-        // Fetch MongoDB tasks
         const taskResponse = await axios.get(
           `http://localhost:5000/tasks/debug-tasks/${calendarId}`
         );
@@ -52,23 +50,11 @@ const YourGoogleCalendar = () => {
               title: task.title,
               start: task.date,
               end: task.date,
-              source: 'db', // Mark as DB task
+              description: task.description,
             }))
           : [];
 
-        // Combine and filter duplicates based on title and start date
-        const combinedEvents = [...googleEvents, ...dbTasks];
-        const uniqueEvents = combinedEvents.filter(
-          (event, index, self) =>
-            index ===
-            self.findIndex(
-              (e) =>
-                e.title === event.title &&
-                new Date(e.start).toISOString() === new Date(event.start).toISOString()
-            )
-        );
-
-        setEvents(uniqueEvents);
+        setEvents([...googleEvents, ...dbTasks]);
       } catch (error) {
         console.error('Error fetching events and tasks:', error);
       } finally {
@@ -106,14 +92,29 @@ const YourGoogleCalendar = () => {
 
   const handleEventClick = (info) => {
     const event = info.event;
-    const formattedDate = new Date(event.startStr).toISOString().split('T')[0];
-    navigate('/Show-Task', {
-      state: {
-        calendarId,
-        selectedDate: formattedDate,
-        eventId: event.id,
-      },
+    setSelectedEvent({
+      id: event.id,
+      title: event.title,
+      date: event.startStr,
+      description: event.extendedProps?.description || 'No description available',
     });
+    setShowModal(true);
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    try {
+      const response = await axios.delete(`http://localhost:5000/tasks/delete-task/${taskId}`);
+      if (response.data.success) {
+        alert('Task deleted successfully!');
+        setEvents((prevEvents) => prevEvents.filter((event) => event.id !== taskId));
+        setShowModal(false);
+      } else {
+        alert('Failed to delete task.');
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      alert('Error deleting task.');
+    }
   };
 
   const handleCreateTask = async () => {
@@ -123,7 +124,7 @@ const YourGoogleCalendar = () => {
     }
 
     try {
-      await axios.post(
+      const response = await axios.post(
         'http://localhost:5000/tasks/create-task',
         {
           calendarId,
@@ -133,9 +134,26 @@ const YourGoogleCalendar = () => {
         },
         { withCredentials: true }
       );
-      alert('Task created successfully!');
-      setShowTaskForm(false);
-      setNewTask({ title: '', description: '', date: '' });
+
+      if (response.data.success) {
+        alert('Task created successfully!');
+        setShowTaskForm(false);
+        setNewTask({ title: '', description: '', date: '' });
+
+        // Add new task to events
+        setEvents((prevEvents) => [
+          ...prevEvents,
+          {
+            id: response.data.task._id,
+            title: response.data.task.title,
+            start: response.data.task.date,
+            end: response.data.task.date,
+            description: response.data.task.description,
+          },
+        ]);
+      } else {
+        alert('Task creation failed. Please try again.');
+      }
     } catch (error) {
       console.error('Error creating task:', error);
       alert('Error creating task. Please try again.');
@@ -180,7 +198,15 @@ const YourGoogleCalendar = () => {
               {showTaskForm ? 'Cancel' : 'Create Task'}
             </button>
             {showTaskForm && (
-              <div style={{ marginTop: '20px' }}>
+              <div
+                style={{
+                  marginTop: '20px',
+                  backgroundColor: '#f9f9f9',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                }}
+              >
                 <h3>Create a New Task</h3>
                 <div>
                   <label>Title:</label>
@@ -194,11 +220,17 @@ const YourGoogleCalendar = () => {
                 </div>
                 <div>
                   <label>Description:</label>
-                  <input
-                    type="text"
+                  <textarea
                     value={newTask.description}
-                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, description: e.target.value })
+                    }
+                    style={{
+                      width: '100%',
+                      marginBottom: '10px',
+                      padding: '5px',
+                      minHeight: '60px',
+                    }}
                   />
                 </div>
                 <div>
@@ -229,6 +261,72 @@ const YourGoogleCalendar = () => {
           </>
         )}
       </div>
+
+      {showModal && selectedEvent && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'white',
+            color: 'black',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            zIndex: 1000,
+          }}
+        >
+          <h3 style={{ marginBottom: '10px' }}>{selectedEvent.title}</h3>
+          <p>
+            <strong>Date:</strong> {new Date(selectedEvent.date).toLocaleString()}
+          </p>
+          <p>
+            <strong>Description:</strong> {selectedEvent.description}
+          </p>
+          <button
+            onClick={() => setShowModal(false)}
+            style={{
+              marginTop: '10px',
+              padding: '10px 20px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Close
+          </button>
+          <button
+            onClick={() => handleDeleteTask(selectedEvent.id)}
+            style={{
+              marginTop: '10px',
+              padding: '10px 20px',
+              backgroundColor: '#FF6347',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+              marginLeft: '10px',
+            }}
+          >
+            Delete Task
+          </button>
+        </div>
+      )}
+      {showModal && (
+        <div
+          onClick={() => setShowModal(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 999,
+          }}
+        />
+      )}
     </div>
   );
 };
