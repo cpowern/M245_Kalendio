@@ -25,6 +25,7 @@ const YourGoogleCalendar = () => {
       }
 
       try {
+        // Fetch Google Calendar events
         const googleResponse = await axios.get(
           `http://localhost:5000/auth/events/${calendarId}`,
           { withCredentials: true }
@@ -36,9 +37,11 @@ const YourGoogleCalendar = () => {
               title: event.summary || 'No Title',
               start: event.start.dateTime || event.start.date,
               end: event.end?.dateTime || event.end?.date,
+              source: 'google', // Mark as Google event
             }))
           : [];
 
+        // Fetch MongoDB tasks
         const taskResponse = await axios.get(
           `http://localhost:5000/tasks/debug-tasks/${calendarId}`
         );
@@ -49,10 +52,23 @@ const YourGoogleCalendar = () => {
               title: task.title,
               start: task.date,
               end: task.date,
+              source: 'db', // Mark as DB task
             }))
           : [];
 
-        setEvents([...googleEvents, ...dbTasks]);
+        // Combine and filter duplicates based on title and start date
+        const combinedEvents = [...googleEvents, ...dbTasks];
+        const uniqueEvents = combinedEvents.filter(
+          (event, index, self) =>
+            index ===
+            self.findIndex(
+              (e) =>
+                e.title === event.title &&
+                new Date(e.start).toISOString() === new Date(event.start).toISOString()
+            )
+        );
+
+        setEvents(uniqueEvents);
       } catch (error) {
         console.error('Error fetching events and tasks:', error);
       } finally {
