@@ -1,5 +1,6 @@
 const express = require('express');
 const { google } = require('googleapis');
+const Task = require('../models/Task'); // Ensure Task model is imported
 require('dotenv').config();
 const router = express.Router();
 
@@ -57,14 +58,42 @@ router.get('/events/:calendarId', ensureAuthenticated, async (req, res) => {
         const response = await calendar.events.list({
             calendarId,
             timeMin: new Date().toISOString(),
-            maxResults: 10,
+            maxResults: 2500,
             singleEvents: true,
             orderBy: 'startTime',
         });
-        res.status(200).json({ success: true, events: response.data.items });
+
+        const events = response.data.items;
+
+        if (!events || events.length === 0) {
+            console.log(`No events found for calendarId: ${calendarId}`);
+            return res.status(200).json({ success: true, events: [] });
+        }
+
+        console.log(`Fetched events for calendarId: ${calendarId}`, events); // Log full response for debugging
+
+        // Save events to MongoDB
+        for (const event of events) {
+            const taskData = {
+                calendarId,
+                title: event.summary || 'No Title',
+                description: event.description || '',
+                date: event.start.dateTime || event.start.date,
+            };
+
+            await Task.updateOne(
+                { calendarId, title: taskData.title, date: taskData.date },
+                { $set: taskData },
+                { upsert: true }
+            );
+
+            console.log(`Saved task: ${taskData.title} for date ${taskData.date}`);
+        }
+
+        res.status(200).json({ success: true, events });
     } catch (error) {
-        console.error('Error fetching events:', error.message);
-        res.status(500).json({ success: false, message: 'Error fetching events' });
+        console.error('Error fetching or saving events:', error.response?.data || error.message); // Log detailed error
+        res.status(500).json({ success: false, message: 'Error fetching or saving events' });
     }
 });
 

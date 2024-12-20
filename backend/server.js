@@ -7,6 +7,7 @@ require('dotenv').config();
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth'); // Authentication routes
 const apiRoutes = require('./routes/api'); // API routes for calendars, etc.
+const tasksRoutes = require('./routes/tasks'); // Task routes
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -14,7 +15,7 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 connectDB();
 
-// MongoDB-Store for Sessions
+// MongoDB Store for Sessions
 const store = new MongoDBStore({
     uri: process.env.MONGO_URI,
     collection: 'sessions',
@@ -25,11 +26,12 @@ store.on('error', (error) => {
 });
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:5173', credentials: true })); // Enable credentials
+app.use(cors({ origin: 'http://localhost:5173', credentials: true })); // Enable CORS for frontend
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(
     session({
-        secret: 'secret',
+        secret: process.env.SESSION_SECRET || 'secret',
         resave: false,
         saveUninitialized: false,
         store: store, // MongoDB store
@@ -39,22 +41,26 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Routes
+app.use('/auth', authRoutes); // Authentication Routes
+app.use('/api', apiRoutes); // Calendar and group API Routes
+app.use('/tasks', tasksRoutes); // Task-related routes
 
-// Authentication Routes
-app.use('/auth', authRoutes);
+// Start the Server
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 
-// API Routes for calendars and group functionality
-app.use('/api', apiRoutes);
+// Test Endpoint for Debugging CORS (Add this first, above other handlers)
+app.get('/test', (req, res) => {
+    console.log('Test endpoint hit');
+    res.json({ message: 'CORS is working!' });
+});
 
 // Root Route
 app.get('/', (req, res) => {
     res.send({ message: 'Welcome to the Kalendio API' });
 });
 
-// Handle unauthorized requests
+// Catch-All for Undefined Routes (Move this to the end)
 app.use((req, res, next) => {
-    res.status(401).send({ message: 'Unauthorized request' });
+    res.status(404).send({ message: 'Route not found' });
 });
-
-// Start the Server
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

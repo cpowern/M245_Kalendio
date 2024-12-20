@@ -113,6 +113,7 @@ router.post('/create-calendar', async (req, res) => {
 });
 
 // List user's calendars
+/*
 router.get('/list-calendars', async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -140,7 +141,35 @@ router.get('/list-calendars', async (req, res) => {
         console.error('Error fetching calendar list:', error.message);
         res.status(500).json({ success: false, message: 'Error fetching calendar list' });
     }
+}); */
+
+// Temporarily bypass authentication for debugging
+router.get('/list-calendars', async (req, res) => {
+    const auth = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
+    );
+
+    auth.setCredentials({
+        refresh_token: process.env.REFRESHTOKEN,
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth });
+
+    try {
+        const response = await calendar.calendarList.list();
+        const calendars = response.data.items.map((cal) => ({
+            id: cal.id,
+            summary: cal.summary,
+            timeZone: cal.timeZone || 'No TimeZone',
+        }));
+        res.status(200).json({ success: true, calendars });
+    } catch (error) {
+        console.error('Error fetching calendar list:', error.message);
+        res.status(500).json({ success: false, message: 'Error fetching calendar list' });
+    }
 });
+
 
 // List events for a specific calendar
 router.get('/events/:calendarId', async (req, res) => {

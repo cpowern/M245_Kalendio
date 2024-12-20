@@ -1,91 +1,63 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
+import '../styles/MainPage.css';
 
-const GoogleCalendarPage = () => {
-  const [calendars, setCalendars] = useState([]);
-  const [selectedCalendarId, setSelectedCalendarId] = useState(null);
-  const [events, setEvents] = useState([]);
+const YourGoogleCalendar = () => {
+  const [events, setEvents] = useState([]); // State for events
+  const [loading, setLoading] = useState(true); // Loading state
+  const calendarId = 'YOUR_CALENDAR_ID'; // Replace with the actual calendarId
+  const navigate = useNavigate(); // For navigation to DailySchedule
 
-  // Fetch all calendars on component mount
   useEffect(() => {
-    const fetchCalendars = async () => {
+    const fetchEvents = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/list-calendars', {
-          withCredentials: true, // Ensures cookies/session are sent
+        const response = await axios.get(`http://localhost:5000/auth/events/${calendarId}`, {
+          withCredentials: true,
         });
+
         if (response.data.success) {
-          setCalendars(response.data.calendars);
+          setEvents(response.data.events); // Set the events
         } else {
-          console.error('Failed to fetch calendars:', response.data.message);
+          console.error('Failed to fetch events:', response.data.message);
         }
       } catch (error) {
-        console.error('Error fetching calendars:', error);
+        console.error('Error fetching events:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchCalendars();
-  }, []);
+    fetchEvents();
+  }, [calendarId]);
 
-  // Fetch events for a specific calendar
-  const fetchEvents = async (calendarId) => {
-    try {
-      const response = await axios.get(`http://localhost:5000/api/events/${calendarId}`, {
-        withCredentials: true,
-      });
-      if (response.data.success) {
-        // Format events for FullCalendar
-        const formattedEvents = response.data.events.map((event) => ({
-          title: event.summary,
-          start: event.start.dateTime || event.start.date,
-          end: event.end?.dateTime || event.end?.date,
-        }));
-        setEvents(formattedEvents);
-      } else {
-        console.error('Failed to fetch events:', response.data.message);
-      }
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    }
+  // Handle date clicks
+  const handleDateClick = (info) => {
+    navigate('/daily-schedule', { state: { selectedDate: info.dateStr, calendarId } });
   };
 
-  // Handle calendar selection
-  const handleCalendarSelect = (calendarId) => {
-    setSelectedCalendarId(calendarId);
-    fetchEvents(calendarId); // Fetch events for the selected calendar
-  };
+  if (loading) {
+    return <p style={{ textAlign: 'center' }}>Lädt...</p>;
+  }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1 style={{ textAlign: 'center' }}>Google Calendar Integration</h1>
-      <h2>Your Calendars</h2>
-      <ul>
-        {calendars.length > 0 ? (
-          calendars.map((calendar) => (
-            <li key={calendar.id} style={{ marginBottom: '10px', cursor: 'pointer' }}>
-              <button onClick={() => handleCalendarSelect(calendar.id)}>
-                {calendar.summary} ({calendar.timeZone || 'No Timezone'})
-              </button>
-            </li>
-          ))
-        ) : (
-          <p>No calendars found.</p>
-        )}
-      </ul>
+    <div className="main-page-container">
+      <header className="main-page-header">
+        <h1>Your Google Calendar</h1>
+      </header>
 
-      {selectedCalendarId && (
-        <div style={{ marginTop: '20px' }}>
-          <h3>Events for Calendar: {selectedCalendarId}</h3>
-          <FullCalendar
-            plugins={[dayGridPlugin]}
-            initialView="dayGridMonth"
-            events={events} // Display fetched events
-          />
-        </div>
-      )}
+      <div className="calendar-container" style={{ marginTop: '20px' }}>
+        <FullCalendar
+          plugins={[dayGridPlugin]}
+          initialView="dayGridMonth"
+          events={events} // Pass events here
+          dateClick={handleDateClick} // Handle date clicks
+        />
+      </div>
     </div>
   );
 };
 
-export default GoogleCalendarPage;
+export default YourGoogleCalendar;
