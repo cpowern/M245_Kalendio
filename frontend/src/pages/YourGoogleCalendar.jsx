@@ -7,16 +7,20 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import '../styles/MainPage.css';
 
 const YourGoogleCalendar = () => {
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [calendarName, setCalendarName] = useState('Your Google Calendar');
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', description: '', date: '', time: '' });
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { groupCode, calendarId } = location.state || {};
+
+  // NEU HINZUGEFÜGT: Pending Tasks separat verwalten
+  const [pendingTasks, setPendingTasks] = useState([]);
 
   useEffect(() => {
     const fetchEventsAndTasks = async () => {
@@ -27,6 +31,7 @@ const YourGoogleCalendar = () => {
       }
 
       try {
+        // Google Events
         const googleResponse = await axios.get(
           `http://localhost:5000/auth/events/${calendarId}`,
           { withCredentials: true }
@@ -40,57 +45,57 @@ const YourGoogleCalendar = () => {
               end: event.end?.dateTime || event.end?.date,
               description: event.description || 'No description',
               isGoogleEvent: true,
+              // status gibt es in Google nicht -> immer "accepted" annehmen
             }))
           : [];
 
+        // DB Tasks
         const taskResponse = await axios.get(
           `http://localhost:5000/tasks/debug-tasks/${calendarId}`
         );
 
         const dbTasks = taskResponse.data.success
-        ? taskResponse.data.tasks.map((task) => {
-            return {
-              id: task._id,
-              title: task.title,
-              start: task.date,
-              end: task.date,
-              description: task.description,
-              isGoogleEvent: false,
-              time: task.time || '12:00', // falls aus irgendeinem Grund nicht vorhanden
-            };
-          })
-        : [];
-      
+          ? taskResponse.data.tasks.map((task) => {
+              return {
+                id: task._id,
+                title: task.title,
+                start: task.date,
+                end: task.date,
+                description: task.description,
+                isGoogleEvent: false,
+                time: task.time || '12:00',
+                status: task.status, // NEU
+              };
+            })
+          : [];
+
         const combinedEvents = [...googleEvents, ...dbTasks];
 
-        // Map für einzigartige Events nach Titel+Datum
+        // Deduplizierung per key: (title|date)
         const eventMap = new Map();
-
         for (const event of combinedEvents) {
           const eventDate = new Date(event.start).toISOString().split('T')[0];
           const key = `${event.title}|${eventDate}`;
-
           if (!eventMap.has(key)) {
-            // Noch kein Event mit diesem Titel und Datum eingetragen, füge es hinzu
             eventMap.set(key, event);
           } else {
-            // Es gibt schon ein Event mit gleichem Titel und Datum
             const existing = eventMap.get(key);
-            // Wenn das bestehende ein Google-Event ist und das neue ein DB-Event, ersetzen wir es.
-            // So stellen wir sicher, dass wir am Ende ein DB-Event behalten, welches löschbar ist.
             if (existing.isGoogleEvent && !event.isGoogleEvent) {
               eventMap.set(key, event);
             }
-            // Wenn beide DB-Events sind, können wir eines behalten, z. B. das erste.
-            // Wenn beide Google-Events sind, ebenfalls einfach das erste behalten.
-            // In diesem Beispiel machen wir nichts weiter.
           }
         }
 
         const uniqueEvents = Array.from(eventMap.values());
-        setEvents(uniqueEvents);
 
-        
+        // NEU HINZUGEFÜGT: Pending-Tasks rausfiltern für separate Anzeige
+        const pending = uniqueEvents.filter((ev) => ev.status === 'pending');
+        const acceptedOrGoogle = uniqueEvents.filter(
+          (ev) => !ev.status || ev.status === 'accepted'
+        );
+
+        setPendingTasks(pending);
+        setEvents(acceptedOrGoogle);
       } catch (error) {
         console.error('Error fetching events and tasks:', error);
       } finally {
@@ -152,7 +157,7 @@ const YourGoogleCalendar = () => {
       console.error('Error deleting task:', error);
       alert('Error deleting task.');
     }
-  };  
+  };
 
   const handleCreateTask = async () => {
     if (!newTask.title || !newTask.date) {
@@ -178,15 +183,18 @@ const YourGoogleCalendar = () => {
         setShowTaskForm(false);
         setNewTask({ title: '', description: '', date: '', time: '' });
 
-        setEvents((prevEvents) => [
-          ...prevEvents,
+        // NEU: Da das Task anfangs "pending" ist, direkt in die pendingTasks packen
+        const created = response.data.task;
+        setPendingTasks((prev) => [
+          ...prev,
           {
-            id: response.data.task._id,
-            title: response.data.task.title,
-            start: response.data.task.date,
-            end: response.data.task.date,
-            description: response.data.task.description,
+            id: created._id,
+            title: created.title,
+            start: created.date,
+            end: created.date,
+            description: created.description,
             isGoogleEvent: false,
+            status: created.status,
           },
         ]);
       } else {
@@ -195,6 +203,61 @@ const YourGoogleCalendar = () => {
     } catch (error) {
       console.error('Error creating task:', error);
       alert('Error creating task. Please try again.');
+    }
+  };
+
+  // NEU HINZUGEFÜGT: Accept & Reject
+  const handleAcceptTask = async (taskId) => {
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/tasks/accept-task/${taskId}`,
+        {},
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        alert(response.data.message);
+
+        // Falls Task jetzt status='accepted' hat -> aus pendingTasks entfernen und zu events verschieben
+        if (response.data.status === 'accepted') {
+          setPendingTasks((prev) => prev.filter((task) => task.id !== taskId));
+          // Wir könnten optional hier an `setEvents` anfügen, falls das Event
+          // ab sofort in der "accepted" Liste angezeigt werden soll
+          const pendingTask = pendingTasks.find((t) => t.id === taskId);
+          if (pendingTask) {
+            setEvents((prevEvents) => [...prevEvents, { ...pendingTask, status: 'accepted' }]);
+          }
+        } else {
+          // oder nur Vote-Count updaten, falls wir das irgendwo anzeigen wollen
+        }
+      } else {
+        alert(response.data.message || 'Could not accept task.');
+      }
+    } catch (error) {
+      console.error('Error accepting task:', error);
+      alert('Error accepting task.');
+    }
+  };
+
+  const handleRejectTask = async (taskId) => {
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/tasks/reject-task/${taskId}`,
+        {},
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        alert(response.data.message);
+
+        // Wenn Task direkt gelöscht wurde -> komplett rausfiltern
+        if (response.data.message === 'Task rejected and deleted') {
+          setPendingTasks((prev) => prev.filter((task) => task.id !== taskId));
+        }
+      } else {
+        alert(response.data.message || 'Could not reject task.');
+      }
+    } catch (error) {
+      console.error('Error rejecting task:', error);
+      alert('Error rejecting task.');
     }
   };
 
@@ -255,12 +318,14 @@ const YourGoogleCalendar = () => {
             </button>
             
             <button
-              onClick={() => navigate('/day-view', {
-                state: {
-                  calendarId: calendarId,
-                  selectedDate: new Date().toISOString().split('T')[0]
-                }
-              })}
+              onClick={() =>
+                navigate('/day-view', {
+                  state: {
+                    calendarId: calendarId,
+                    selectedDate: new Date().toISOString().split('T')[0],
+                  },
+                })
+              }
               style={{
                 marginTop: '20px',
                 marginLeft: '10px',
@@ -347,6 +412,70 @@ const YourGoogleCalendar = () => {
         )}
       </div>
 
+      {/* NEU HINZUGEFÜGT: Bereich für Pending Tasks */}
+      {!loading && pendingTasks.length > 0 && (
+        <div
+          style={{
+            marginTop: '20px',
+            backgroundColor: '#fff8cd',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            maxWidth: '600px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            // NEU: Schrift schwarz machen
+            color: 'black',
+          }}
+        >
+          <h2>Pending Tasks</h2>
+          {pendingTasks.map((task) => (
+            <div
+              key={task.id}
+              style={{
+                border: '1px solid #ccc',
+                padding: '10px',
+                marginBottom: '10px',
+                borderRadius: '5px',
+              }}
+            >
+              <h4>{task.title}</h4>
+              <p>{task.description}</p>
+              <p>
+                <strong>Date:</strong>{' '}
+                {new Date(task.start).toLocaleDateString()}{' '}
+                {new Date(task.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
+              <button
+                onClick={() => handleAcceptTask(task.id)}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: 'green',
+                  color: 'white',
+                  border: 'none',
+                  marginRight: '10px',
+                  cursor: 'pointer',
+                }}
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => handleRejectTask(task.id)}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: 'red',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Reject
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {showModal && selectedEvent && (
         <div
           style={{
@@ -364,7 +493,8 @@ const YourGoogleCalendar = () => {
         >
           <h3 style={{ marginBottom: '10px' }}>{selectedEvent.title}</h3>
           <p>
-            <strong>Date:</strong> {new Date(selectedEvent.date).toLocaleString()}
+            <strong>Date:</strong>{' '}
+            {new Date(selectedEvent.date).toLocaleString()}
           </p>
           <p>
             <strong>Description:</strong> {selectedEvent.description}

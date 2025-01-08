@@ -113,7 +113,7 @@ router.post('/create-calendar', async (req, res) => {
 });
 
 // List user's calendars
-/*
+
 router.get('/list-calendars', async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -141,7 +141,7 @@ router.get('/list-calendars', async (req, res) => {
         console.error('Error fetching calendar list:', error.message);
         res.status(500).json({ success: false, message: 'Error fetching calendar list' });
     }
-}); */
+}); 
 
 // Temporarily bypass authentication for debugging
 router.get('/list-calendars', async (req, res) => {
