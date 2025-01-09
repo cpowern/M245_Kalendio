@@ -1,3 +1,4 @@
+//group.js
 const mongoose = require('mongoose');
 
 const GroupSchema = new mongoose.Schema({

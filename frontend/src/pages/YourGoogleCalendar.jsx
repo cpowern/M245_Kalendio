@@ -145,7 +145,9 @@ const YourGoogleCalendar = () => {
 
   const handleDeleteTask = async (taskId) => {
     try {
-      const response = await axios.delete(`http://localhost:5000/tasks/delete-task/${taskId}`);
+      const response = await axios.delete(`http://localhost:5000/tasks/delete-task/${taskId}`, {
+        withCredentials: true
+      });
       if (response.data.success) {
         setEvents((prevEvents) => prevEvents.filter((event) => event.id !== taskId));
         setShowModal(false);

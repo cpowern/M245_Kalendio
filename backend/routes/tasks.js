@@ -2,10 +2,23 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
+const Calendar = require('../models/Calendar'); // importiert, um Owner zu checken
 const { google } = require('googleapis');
 
-// router.post('/create-task', ...)
-router.post('/create-task', async (req, res) => {
+/**
+ * Middleware, um sicherzustellen, dass der User eingeloggt ist.
+ * So hast du in req.user immer deinen User.
+ */
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  return res.status(401).json({ success: false, message: 'Unauthorized (no req.user)' });
+}
+
+// -----------------------------------------------------
+// CREATE TASK:
+router.post('/create-task', ensureAuthenticated, async (req, res) => {
   const { calendarId, title, description, date, time } = req.body;
 
   if (!calendarId || !title || !date) {
@@ -23,15 +36,14 @@ router.post('/create-task', async (req, res) => {
 
     const calendar = google.calendar({ version: 'v3', auth });
 
-    // Wenn keine Zeit angegeben, nutze 12:00 als Standard
+    // Wenn keine Zeit angegeben => Standard 12:00
     const chosenTime = time && time.trim() !== '' ? time : '12:00';
-
     const [hours, minutes] = chosenTime.split(':');
     const startDate = new Date(date);
     startDate.setHours(hours, minutes || 0, 0, 0);
     const endDate = new Date(startDate.getTime() + 3600000); // +1 Stunde
 
-    // Google Kalender Event
+    // Google Calendar Event
     const event = {
       summary: title,
       description,
@@ -45,7 +57,7 @@ router.post('/create-task', async (req, res) => {
       },
     };
 
-    // Füge das Event sofort in Google Calendar ein
+    // Füge Event in Google Calendar ein
     const insertedEvent = await calendar.events.insert({
       calendarId,
       requestBody: event,
@@ -53,19 +65,19 @@ router.post('/create-task', async (req, res) => {
 
     console.log('Task added to Google Calendar:', insertedEvent.data);
 
-    // NEU: Google Event ID holen
-    const googleEventId = insertedEvent.data.id; // z.B. "ufmb8qq8ihsg9mpmaa30gprr2g"
+    // Google-Event-ID holen
+    const googleEventId = insertedEvent.data.id;
 
-    // Speichere in MongoDB
-    const creatorId = req.user ? req.user._id : null; 
+    // In MongoDB speichern
+    const creatorId = req.user ? req.user._id : null;
     const task = await Task.create({
       calendarId,
       title,
       description,
-      date: startDate, // enthält Datum und Zeit
+      date: startDate,
       time: chosenTime,
       createdBy: creatorId,
-      googleEventId, // <---- HIER
+      googleEventId,
     });
 
     console.log('Task created:', task);
@@ -76,17 +88,52 @@ router.post('/create-task', async (req, res) => {
   }
 });
 
-// router.delete('/delete-task/:id', ...)
-router.delete('/delete-task/:id', async (req, res) => {
+// -----------------------------------------------------
+// DELETE TASK -> nur Admin darf löschen
+router.delete('/delete-task/:id', ensureAuthenticated, async (req, res) => {
+  console.log('[DELETE /delete-task/:id] ENTERED =>', req.params.id);
+
   try {
     const taskId = req.params.id;
-    const deletedTask = await Task.findByIdAndDelete(taskId);
 
-    if (!deletedTask) {
+    // 1) Task holen
+    const foundTask = await Task.findById(taskId);
+    console.log('[DEBUG] foundTask =>', foundTask);
+
+    if (!foundTask) {
+      console.log('[DEBUG] => 404 (Task not found)');
       return res.status(404).json({ success: false, message: 'Task not found' });
     }
 
-    // Delete corresponding Google Calendar event
+    // 2) Kalender holen, um Owner zu checken
+    const calDoc = await Calendar.findOne({ calendarId: foundTask.calendarId });
+    console.log('[DEBUG] calDoc =>', calDoc);
+
+    if (!calDoc) {
+      console.log('[DEBUG] => 404 (Associated calendar not found)');
+      return res.status(404).json({
+        success: false,
+        message: 'Associated calendar not found',
+      });
+    }
+
+    // 3) Prüfen, ob der currentUser = Owner
+    console.log('[DEBUG] calDoc.owner.toString() =>', calDoc.owner.toString());
+    console.log('[DEBUG] req.user._id.toString() =>', req.user._id.toString());
+
+    if (calDoc.owner.toString() !== req.user._id.toString()) {
+      console.log('[DEBUG] => 403 (not same owner)');
+      return res.status(403).json({
+        success: false,
+        message: 'Only the admin (calendar owner) can delete tasks',
+      });
+    }
+
+    // 4) Task wirklich löschen
+    const deletedTask = await Task.findByIdAndDelete(taskId);
+    console.log('[DEBUG] deletedTask =>', deletedTask);
+
+    // Aus Google Calendar löschen
     const auth = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET
@@ -94,27 +141,29 @@ router.delete('/delete-task/:id', async (req, res) => {
     auth.setCredentials({ refresh_token: process.env.REFRESHTOKEN });
 
     const calendar = google.calendar({ version: 'v3', auth });
-
     try {
-      // NEU: googleEventId statt _id.toString()
+      console.log('[DEBUG] => Deleting event from Google...');
       await calendar.events.delete({
         calendarId: deletedTask.calendarId,
         eventId: deletedTask.googleEventId,
       });
-      console.log('Google Calendar event deleted');
+      console.log('[DEBUG] => Google Calendar event deleted');
     } catch (error) {
       console.error('Error deleting Google Calendar event:', error.message);
-      // Handle cases where the event doesn't exist in Google Calendar
+      // Falls das Event nicht (mehr) existiert, ist das kein Drama
     }
 
+    console.log('[DEBUG] => returning 200');
     res.status(200).json({ success: true, message: 'Task deleted successfully' });
+
   } catch (error) {
-    console.error('Error deleting task:', error.message);
+    console.error('[DELETE /delete-task/:id] => Error:', error);
     res.status(500).json({ success: false, message: 'Error deleting task' });
   }
 });
 
-// router.get('/tasks', ...)
+// -----------------------------------------------------
+// GET /tasks
 router.get('/tasks', async (req, res) => {
   const { calendarId, date } = req.query;
 
@@ -149,10 +198,10 @@ router.get('/tasks', async (req, res) => {
   }
 });
 
-// Debugging route to fetch all tasks from the database for a specific calendarId
+// -----------------------------------------------------
+// DEBUG: fetch all tasks for a calendar
 router.get('/debug-tasks/:calendarId', async (req, res) => {
   const { calendarId } = req.params;
-
   try {
     const tasks = await Task.find({ calendarId });
     res.status(200).json({ success: true, tasks });
@@ -162,10 +211,11 @@ router.get('/debug-tasks/:calendarId', async (req, res) => {
   }
 });
 
+// -----------------------------------------------------
 // Temporary in-memory storage
 let mockTasks = [];
 
-// Endpoint to save a task locally
+// Save a task locally
 router.post('/mock-save-task', (req, res) => {
   const { calendarId, title, description, date } = req.body;
 
@@ -180,11 +230,12 @@ router.post('/mock-save-task', (req, res) => {
   res.status(201).json({ success: true, task: newTask });
 });
 
-// Endpoint to fetch locally saved tasks
+// Fetch locally saved tasks
 router.get('/mock-fetch-tasks', (req, res) => {
   res.status(200).json({ success: true, tasks: mockTasks });
 });
 
+// test-db-save-task
 router.post('/test-db-save-task', async (req, res) => {
   const { calendarId, title, description, date } = req.body;
 
@@ -202,16 +253,11 @@ router.post('/test-db-save-task', async (req, res) => {
   }
 });
 
-// NEU HINZUGEFÜGT: ACCEPT / REJECT Task 
-// ------------------------------------------------------
-// Diese Routen gehen davon aus, dass req.user verfügbar ist.
-// Falls du kein Session-/Passport-Middleware nutzt, musst du
-// in jeder Request den User anders identifizieren.
-// ------------------------------------------------------
-
+// -----------------------------------------------------
+// ACCEPT/REJECT (unverändert)
 router.post('/accept-task/:id', async (req, res) => {
   try {
-    const userId = req.user ? req.user._id : null; 
+    const userId = req.user ? req.user._id : null;
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Not authenticated' });
     }
@@ -230,13 +276,11 @@ router.post('/accept-task/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: 'User already voted' });
     }
 
-    // User hat noch nicht abgestimmt -> Accept
+    // Accept
     task.acceptedBy.push(userId);
 
-    // Check, ob accept >= 3
     if (task.acceptedBy.length >= 3) {
       task.status = 'accepted';
-      // Task ist endgültig akzeptiert -> wir lassen es im DB + Google Calendar
     }
     await task.save();
 
@@ -255,7 +299,7 @@ router.post('/accept-task/:id', async (req, res) => {
 
 router.post('/reject-task/:id', async (req, res) => {
   try {
-    const userId = req.user ? req.user._id : null; 
+    const userId = req.user ? req.user._id : null;
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Not authenticated' });
     }
@@ -274,12 +318,11 @@ router.post('/reject-task/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: 'User already voted' });
     }
 
-    // User hat noch nicht abgestimmt -> Reject
+    // Reject
     task.rejectedBy.push(userId);
 
-    // Check, ob reject >= 3
     if (task.rejectedBy.length >= 3) {
-      // Dann Task komplett löschen (inkl. aus Google)
+      // Task komplett löschen (inkl. Google)
       const auth = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET
@@ -288,7 +331,6 @@ router.post('/reject-task/:id', async (req, res) => {
       const calendar = google.calendar({ version: 'v3', auth });
 
       try {
-        // Hier googleEventId statt _id.toString()
         await calendar.events.delete({
           calendarId: task.calendarId,
           eventId: task.googleEventId,
