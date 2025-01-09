@@ -157,7 +157,7 @@ const YourGoogleCalendar = () => {
       }
     } catch (error) {
       console.error('Error deleting task:', error);
-      alert('Error deleting task.');
+      alert('You dont have the authority to delete this task');
     }
   };
 
