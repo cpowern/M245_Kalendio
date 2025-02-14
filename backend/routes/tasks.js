@@ -275,15 +275,33 @@ router.post('/accept-task/:id', async (req, res) => {
     if (task.acceptedBy.includes(userId) || task.rejectedBy.includes(userId)) {
       return res.status(400).json({ success: false, message: 'User already voted' });
     }
-
-    // Accept
+    
+    // Akzeptiere den Task
     task.acceptedBy.push(userId);
-
-    if (task.acceptedBy.length >= 3) {
+    
+    // Dynamischer Schwellenwert basierend auf der Mitgliederzahl im Calendar-Dokument:
+    // Standardwert, falls das Calendar-Dokument nicht gefunden wird, ist 3
+    let acceptanceThreshold = 3;
+    const calendarDoc = await require('../models/Calendar').findOne({ calendarId: task.calendarId });
+    if (calendarDoc && calendarDoc.membersCount) {
+      const count = calendarDoc.membersCount;
+      if (count >= 2 && count <= 4) {
+        acceptanceThreshold = 1;
+      } else if (count >= 5 && count <= 9) {
+        acceptanceThreshold = 2;
+      } else if (count >= 10 && count < 20) {
+        acceptanceThreshold = 3;
+      } else if (count >= 20) {
+        acceptanceThreshold = 4;
+      }
+    }
+    
+    if (task.acceptedBy.length >= acceptanceThreshold) {
       task.status = 'accepted';
     }
+    
     await task.save();
-
+    
     return res.status(200).json({
       success: true,
       message: 'Task accepted',
@@ -296,6 +314,7 @@ router.post('/accept-task/:id', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error accepting task' });
   }
 });
+
 
 router.post('/reject-task/:id', async (req, res) => {
   try {

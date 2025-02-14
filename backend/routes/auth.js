@@ -94,8 +94,10 @@ router.post('/create-calendar', async (req, res) => {
             groupName,
             calendarId,
             groupCode,
-            owner: req.user._id, // <-- Hier Owner setzen
+            owner: req.user._id,
+            membersCount: 1, // Startwert (kann später durch Beitritte erhöht werden)
         });
+          
 
         console.log('Kalender-ID:', calendarId);
         res.status(201).json({
@@ -213,65 +215,74 @@ router.get('/events/:calendarId', async (req, res) => {
 // join-calendar
 router.post('/join-calendar', async (req, res) => {
     const { groupCode } = req.body;
-
+  
     if (!req.user) {
-        console.log('Unauthorized request - req.user not found');
-        return res.status(401).json({ success: false, message: 'Unauthorized' });
+      console.log('Unauthorized request - req.user not found');
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
-
+  
     try {
-        const calendar = await Calendar.findOne({ groupCode });
-        if (!calendar) {
-            console.log('Calendar not found for groupCode:', groupCode);
-            return res.status(404).json({ success: false, message: 'Kalender mit diesem Code nicht gefunden' });
-        }
-
-        const calendarId = calendar.calendarId;
-        const auth = new google.auth.OAuth2(
-            process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_CLIENT_SECRET
-        );
-        auth.setCredentials({ refresh_token: process.env.REFRESHTOKEN });
-
-        const googleCalendar = google.calendar({ version: 'v3', auth });
-
-        // Prüfen, ob der Benutzer bereits Zugriff hat
-        const aclResponse = await googleCalendar.acl.list({ calendarId });
-        const existingRule = aclResponse.data.items.find(
-            (rule) => rule.scope.value === req.user.email
-        );
-
-        if (existingRule) {
-            console.log('User already has access to the calendar.');
-            return res.status(200).json({
-                success: true,
-                message: `Du hast bereits Zugriff auf den Kalender '${calendar.groupName}'.`,
-                calendarId,
-            });
-        }
-
-        // Zugriffsregel hinzufügen
-        await googleCalendar.acl.insert({
-            calendarId,
-            requestBody: {
-                role: 'writer',
-                scope: {
-                    type: 'user',
-                    value: req.user.email,
-                },
-            },
+      const calendar = await Calendar.findOne({ groupCode });
+      if (!calendar) {
+        console.log('Calendar not found for groupCode:', groupCode);
+        return res.status(404).json({ success: false, message: 'Kalender mit diesem Code nicht gefunden' });
+      }
+  
+      const calendarId = calendar.calendarId;
+      const auth = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
+      );
+      auth.setCredentials({ refresh_token: process.env.REFRESHTOKEN });
+      const googleCalendar = google.calendar({ version: 'v3', auth });
+  
+      // Prüfen, ob der Benutzer bereits Zugriff hat
+      const aclResponse = await googleCalendar.acl.list({ calendarId });
+      const existingRule = aclResponse.data.items.find(
+        (rule) => rule.scope.value === req.user.email
+      );
+  
+      if (existingRule) {
+        console.log('User already has access to the calendar.');
+        return res.status(200).json({
+          success: true,
+          message: `Du hast bereits Zugriff auf den Kalender '${calendar.groupName}'.`,
+          calendarId,
         });
-
-        res.status(200).json({
-            success: true,
-            message: `Erfolgreich dem Kalender '${calendar.groupName}' beigetreten!`,
-            calendarId,
-        });
+      }
+  
+      // Zugriffsregel hinzufügen
+      await googleCalendar.acl.insert({
+        calendarId,
+        requestBody: {
+          role: 'writer',
+          scope: {
+            type: 'user',
+            value: req.user.email,
+          },
+        },
+      });
+  
+      // Mitgliederzahl im Calendar-Dokument erhöhen
+      await Calendar.updateOne(
+        { calendarId: calendar.calendarId },
+        { $inc: { membersCount: 1 } }
+      );
+  
+      // Abfrage des aktualisierten Dokuments, um den neuen Mitgliederstand zu erhalten
+      const updatedCalendar = await Calendar.findOne({ calendarId: calendar.calendarId });
+      console.log(`Updated members count for calendar ${calendar.groupName}: ${updatedCalendar.membersCount}`);
+  
+      res.status(200).json({
+        success: true,
+        message: `Erfolgreich dem Kalender '${calendar.groupName}' beigetreten!`,
+        calendarId,
+      });
     } catch (error) {
-        console.error('Fehler beim Beitreten des Kalenders:', error.message);
-        res.status(500).json({ success: false, message: 'Fehler beim Beitreten des Kalenders' });
+      console.error('Fehler beim Beitreten des Kalenders:', error.message);
+      res.status(500).json({ success: false, message: 'Fehler beim Beitreten des Kalenders' });
     }
-});
+  });  
 
 // test-auth
 router.get('/test-auth', (req, res) => {
