@@ -3,41 +3,61 @@ import { useNavigate } from 'react-router-dom'; // React Router Hook
 import '../styles/Login.css'; // Wiederverwendung des existierenden CSS
 import axios from 'axios';
 
+// Popup-Komponente
+const Popup = ({ message, onClose }) => {
+  return (
+    <div className="popup-overlay" onClick={onClose}>
+      <div className="popup" onClick={(e) => e.stopPropagation()}>
+        <p>{message}</p>
+        <button onClick={onClose} className="popup-close-button">Schließen</button>
+      </div>
+    </div>
+  );
+};
+
 const Groupselection = () => {
   const [groupCode, setGroupCode] = useState(''); // Zustand für den Gruppencode
   const [generatedCode, setGeneratedCode] = useState(''); // Zeige den generierten Code an
+  const [popupMessage, setPopupMessage] = useState('');   // Zustand für die Popup-Nachricht
+  const [loading, setLoading] = useState(false);          // Zustand für das Loading-Overlay
+
   const navigate = useNavigate(); // Initialisierung von useNavigate
 
   console.log('Groupselection wird geladen...'); // Debug-Output
 
   // Funktion zum Beitreten einer Gruppe
   const handleJoinGroup = async () => {
-    if (groupCode.trim() !== '') {
-      try {
-        const response = await axios.post(
-          'http://localhost:5000/auth/join-calendar',
-          { groupCode },
-          { withCredentials: true }
-        );
+    if (groupCode.trim() === '') {
+      setPopupMessage('Bitte geben Sie einen gültigen Code ein.');
+      return;
+    }
 
-        // Prüfen, ob calendarId vorhanden ist
-        const calendarId = response.data.calendarId;
-        if (calendarId) {
-          alert(response.data.message);
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/auth/join-calendar',
+        { groupCode },
+        { withCredentials: true }
+      );
 
-          // Weiterleitung mit groupCode und calendarId
-          navigate('/your-google-calendar', {
-            state: { groupCode, calendarId },
-          });
-        } else {
-          alert('Fehler: Keine Kalender-ID gefunden.');
-        }
-      } catch (error) {
-        console.error('Fehler beim Beitreten der Gruppe:', error);
-        alert(error.response?.data?.message || 'Fehler beim Beitreten der Gruppe.');
+      // Prüfen, ob calendarId vorhanden ist
+      const calendarId = response.data.calendarId;
+      if (calendarId) {
+        // Erfolgsmeldung aus dem Backend
+        setPopupMessage(response.data.message);
+
+        // Weiterleitung mit groupCode und calendarId
+        navigate('/your-google-calendar', {
+          state: { groupCode, calendarId },
+        });
+      } else {
+        setPopupMessage('Fehler: Keine Kalender-ID gefunden.');
       }
-    } else {
-      alert('Bitte geben Sie einen gültigen Code ein.');
+    } catch (error) {
+      console.error('Fehler beim Beitreten der Gruppe:', error);
+      setPopupMessage(error.response?.data?.message || 'Fehler beim Beitreten der Gruppe.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,30 +66,49 @@ const Groupselection = () => {
     const groupName = prompt('Bitte geben Sie einen Gruppennamen ein:');
     if (!groupName || groupName.trim() === '') return;
 
+    setLoading(true);
     try {
-        const response = await axios.post(
-            'http://localhost:5000/auth/create-calendar',
-            { groupName },
-            { withCredentials: true }
-        );
+      const response = await axios.post(
+        'http://localhost:5000/auth/create-calendar',
+        { groupName },
+        { withCredentials: true }
+      );
 
-        if (response.data.success) {
-            const { groupCode, calendarId } = response.data;
-            setGeneratedCode(groupCode);
-            alert(`Gruppe "${groupName}" wurde erstellt! Teilen Sie diesen Code: ${groupCode}`);
+      if (response.data.success) {
+        const { groupCode, calendarId } = response.data;
+        setGeneratedCode(groupCode);
 
-            navigate('/your-google-calendar', { state: { groupCode, calendarId } });
-        } else {
-            alert('Fehler beim Erstellen der Gruppe.');
-        }
+        setPopupMessage(`Gruppe "${groupName}" wurde erstellt! Teilen Sie diesen Code: ${groupCode}`);
+        navigate('/your-google-calendar', { state: { groupCode, calendarId } });
+      } else {
+        setPopupMessage('Fehler beim Erstellen der Gruppe.');
+      }
     } catch (error) {
-        console.error('Fehler beim Erstellen der Gruppe:', error);
-        alert('Fehler beim Erstellen der Gruppe.');
+      console.error('Fehler beim Erstellen der Gruppe:', error);
+      setPopupMessage('Fehler beim Erstellen der Gruppe.');
+    } finally {
+      setLoading(false);
     }
-};
+  };
+
+  // Schließt das Popup, indem die Nachricht geleert wird
+  const closePopup = () => {
+    setPopupMessage('');
+  };
 
   return (
     <div className="login-page">
+      {/* Loading-Overlay */}
+      {loading && (
+        <div className="loading-overlay">
+          <div className="spinner"></div>
+          <p>Wird geladen...</p>
+        </div>
+      )}
+
+      {/* Popup bei vorhandener Nachricht */}
+      {popupMessage && <Popup message={popupMessage} onClose={closePopup} />}
+
       <div className="login-container">
         <h1 className="login-title">Kalendio</h1>
         <p className="login-subtitle">Wähle eine Option aus</p>
