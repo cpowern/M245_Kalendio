@@ -7,6 +7,7 @@ const UserSchema = new mongoose.Schema({
     name: { type: String },
     email: { type: String, unique: true },
     avatar: { type: String },
+    joinedCalendars: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Calendar' }],
     createdAt: { type: Date, default: Date.now },
 });
 

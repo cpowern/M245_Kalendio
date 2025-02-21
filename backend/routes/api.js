@@ -4,6 +4,8 @@ const { google } = require('googleapis');
 const Task = require('../models/Task'); // Ensure Task model is imported
 require('dotenv').config();
 const router = express.Router();
+const User = require('../models/User'); // Füge das hinzu!
+const Calendar = require('../models/Calendar'); // Importiere das Calendar Model
 
 // Middleware to ensure user authentication
 const ensureAuthenticated = (req, res, next) => {
@@ -95,6 +97,60 @@ router.get('/events/:calendarId', ensureAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error fetching or saving events:', error.response?.data || error.message); // Log detailed error
         res.status(500).json({ success: false, message: 'Error fetching or saving events' });
+    }
+});
+
+router.get('/user-calendars', ensureAuthenticated, async (req, res) => {
+    try {
+        console.log('📌 Lade Kalender für User:', req.user._id);
+        
+        const user = await User.findById(req.user._id).populate('joinedCalendars');
+
+        // 🔥 Finde zusätzlich alle Kalender, bei denen der Nutzer der Besitzer ist
+        const ownedCalendars = await Calendar.find({ owner: req.user._id });
+
+        // Kombiniere beigetretene und erstellte Kalender (ohne doppelte Einträge)
+        const allCalendars = [...new Set([...user.joinedCalendars, ...ownedCalendars])];
+
+        console.log('✅ Beigetretene & eigene Kalender:', allCalendars);
+        
+        res.status(200).json({ success: true, calendars: allCalendars });
+    } catch (error) {
+        console.error('❌ Fehler bei /user-calendars:', error);
+        res.status(500).json({ success: false, message: 'Fehler beim Abrufen der Kalender' });
+    }
+});
+
+// routes/api.js - Endpoint um einem Kalender beizutreten
+router.post('/join-calendar', ensureAuthenticated, async (req, res) => {
+    const { groupCode } = req.body;
+
+    console.log('📌 Beitrittsversuch mit Code:', groupCode);
+  
+    try {
+        const calendar = await Calendar.findOne({ groupCode });
+        if (!calendar) {
+            console.log('❌ Kalender nicht gefunden');
+            return res.status(404).json({ success: false, message: 'Kalender nicht gefunden' });
+        }
+
+        console.log('✅ Kalender gefunden:', calendar.groupName);
+
+        if (!calendar.members.includes(req.user._id)) {
+            console.log('📌 Nutzer tritt bei:', req.user._id);
+            calendar.members.push(req.user._id);
+            await calendar.save();
+            
+            req.user.joinedCalendars.push(calendar._id);
+            await req.user.save();
+        } else {
+            console.log('⚠ Nutzer ist bereits Mitglied');
+        }
+
+        res.status(200).json({ success: true, message: 'Kalender erfolgreich beigetreten', calendar });
+    } catch (error) {
+        console.error('❌ Fehler beim Beitreten:', error);
+        res.status(500).json({ success: false, message: 'Fehler beim Beitreten des Kalenders' });
     }
 });
 

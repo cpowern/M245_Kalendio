@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // React Router Hook
-import '../styles/Login.css'; // Wiederverwendung des existierenden CSS
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import '../styles/Login.css';
 
 // Popup-Komponente
 const Popup = ({ message, onClose }) => {
@@ -15,15 +15,26 @@ const Popup = ({ message, onClose }) => {
   );
 };
 
-const Groupselection = () => {
-  const [groupCode, setGroupCode] = useState(''); // Zustand für den Gruppencode
-  const [generatedCode, setGeneratedCode] = useState(''); // Zeige den generierten Code an
-  const [popupMessage, setPopupMessage] = useState('');   // Zustand für die Popup-Nachricht
-  const [loading, setLoading] = useState(false);          // Zustand für das Loading-Overlay
+const GroupSelection = () => {
+  const [groupCode, setGroupCode] = useState('');   // Zustand für den Eingabe-Code
+  const [generatedCode, setGeneratedCode] = useState(''); // Generierter Code nach Erstellung
+  const [popupMessage, setPopupMessage] = useState('');   // Meldungen (Erfolg/Fehler) im Popup
+  const [loading, setLoading] = useState(false);          // Loading-Overlay
+  const [calendars, setCalendars] = useState([]);         // Bereits vorhandene Kalender des Nutzers
 
-  const navigate = useNavigate(); // Initialisierung von useNavigate
+  const navigate = useNavigate();
 
-  console.log('Groupselection wird geladen...'); // Debug-Output
+  // Beim Laden der Komponente alle Kalender laden
+  useEffect(() => {
+    axios
+      .get('http://localhost:5000/api/user-calendars', { withCredentials: true })
+      .then((response) => {
+        setCalendars(response.data.calendars || []);
+      })
+      .catch((error) => {
+        console.error('Fehler beim Laden der Kalender:', error);
+      });
+  }, []);
 
   // Funktion zum Beitreten einer Gruppe
   const handleJoinGroup = async () => {
@@ -35,27 +46,31 @@ const Groupselection = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        'http://localhost:5000/auth/join-calendar',
+        'http://localhost:5000/api/join-calendar',
         { groupCode },
         { withCredentials: true }
       );
 
-      // Prüfen, ob calendarId vorhanden ist
-      const calendarId = response.data.calendarId;
-      if (calendarId) {
-        // Erfolgsmeldung aus dem Backend
+      if (response.data.success) {
         setPopupMessage(response.data.message);
+        // Neuen Kalender auch in der lokalen Liste aktualisieren
+        setCalendars([...calendars, response.data.calendar]);
 
-        // Weiterleitung mit groupCode und calendarId
+        // Weiterleitung zur Kalender-Ansicht
         navigate('/your-google-calendar', {
-          state: { groupCode, calendarId },
+          state: {
+            groupCode,
+            calendarId: response.data.calendar.calendarId,
+          },
         });
       } else {
         setPopupMessage('Fehler: Keine Kalender-ID gefunden.');
       }
     } catch (error) {
       console.error('Fehler beim Beitreten der Gruppe:', error);
-      setPopupMessage(error.response?.data?.message || 'Fehler beim Beitreten der Gruppe.');
+      setPopupMessage(
+        error.response?.data?.message || 'Fehler beim Beitreten der Gruppe.'
+      );
     } finally {
       setLoading(false);
     }
@@ -75,11 +90,19 @@ const Groupselection = () => {
       );
 
       if (response.data.success) {
-        const { groupCode, calendarId } = response.data;
+        const { groupCode, calendarId, calendar } = response.data;
         setGeneratedCode(groupCode);
 
+        // Kalenderliste updaten, damit der Nutzer direkt sieht, dass jetzt ein neuer Kalender existiert
+        setCalendars([...calendars, calendar]);
+
+        // Popup-Meldung
         setPopupMessage(`Gruppe "${groupName}" wurde erstellt! Teilen Sie diesen Code: ${groupCode}`);
-        navigate('/your-google-calendar', { state: { groupCode, calendarId } });
+
+        // Weiterleitung zur Kalender-Ansicht
+        navigate('/your-google-calendar', {
+          state: { groupCode, calendarId },
+        });
       } else {
         setPopupMessage('Fehler beim Erstellen der Gruppe.');
       }
@@ -91,14 +114,14 @@ const Groupselection = () => {
     }
   };
 
-  // Schließt das Popup, indem die Nachricht geleert wird
+  // Schließt das Popup
   const closePopup = () => {
     setPopupMessage('');
   };
 
   return (
     <div className="login-page">
-      {/* Loading-Overlay */}
+      {/* Lade-Overlay */}
       {loading && (
         <div className="loading-overlay">
           <div className="spinner"></div>
@@ -114,14 +137,12 @@ const Groupselection = () => {
         <p className="login-subtitle">Wähle eine Option aus</p>
 
         <div className="group-buttons">
-          <button
-            className="login-button"
-            onClick={handleCreateGroup} // Gruppe erstellen
-          >
+          {/* Gruppe erstellen */}
+          <button className="login-button" onClick={handleCreateGroup}>
             Gruppe Erstellen
           </button>
 
-          {/* Anzeige des generierten Codes */}
+          {/* Falls ein Code generiert wurde, zeigen wir ihn an */}
           {generatedCode && (
             <div className="group-code-display">
               <p>Teile diesen Code, um der Gruppe beizutreten:</p>
@@ -135,25 +156,49 @@ const Groupselection = () => {
             <span className="divider-line"></span>
           </div>
 
+          {/* Gruppe beitreten */}
           <div className="join-group">
             <input
               type="text"
               placeholder="Code eingeben"
               className="login-input"
               value={groupCode}
-              onChange={(e) => setGroupCode(e.target.value)} // Aktualisiert den Gruppencode
+              onChange={(e) => setGroupCode(e.target.value)}
             />
-            <button
-              className="google-button"
-              onClick={handleJoinGroup} // Führt die Beitrittslogik aus
-            >
+            <button className="google-button" onClick={handleJoinGroup}>
               Beitreten
             </button>
           </div>
         </div>
+
+        {/* Liste der Kalender/ Gruppen, in denen der Nutzer bereits ist */}
+        <h2>Deine Kalender</h2>
+        {calendars.length > 0 ? (
+          <ul className="calendar-list">
+            {calendars.map((calendar) => (
+              <li
+                key={calendar._id}
+                className="calendar-item"
+                style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                onClick={() =>
+                  navigate('/your-google-calendar', {
+                    state: {
+                      calendarId: calendar.calendarId,
+                      groupCode: calendar.groupCode,
+                    },
+                  })
+                }
+              >
+                {calendar.groupName}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>Du bist noch keinem Kalender beigetreten.</p>
+        )}
       </div>
     </div>
   );
 };
 
-export default Groupselection;
+export default GroupSelection;
