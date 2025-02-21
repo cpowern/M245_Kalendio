@@ -7,21 +7,36 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import '../styles/MainPage.css';
 
 const YourGoogleCalendar = () => {
+  // -------------------- Vorhandene States --------------------
   const [events, setEvents] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [calendarName, setCalendarName] = useState('Your Google Calendar');
-  const [showTaskForm, setShowTaskForm] = useState(false); // Steuert das Modal
+  const [showTaskForm, setShowTaskForm] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', description: '', date: '', time: '' });
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  // -------------------- Pending Tasks --------------------
+  const [pendingTasks, setPendingTasks] = useState([]);
+
+  // -------------------- Notizen-Pop-up States --------------------
+  const [showNotesModal, setShowNotesModal] = useState(false);  
+  const [notesStructure, setNotesStructure] = useState([]);
+  const [currentPath, setCurrentPath] = useState([]);
+  
+  // Zwei kleine Pop-ups fürs Erstellen
+  const [showNewFolderPopup, setShowNewFolderPopup] = useState(false);
+  const [showNewNotePopup, setShowNewNotePopup] = useState(false);
+
+  // Eingabefelder in den kleinen Pop-ups
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newNoteName, setNewNoteName] = useState('');
 
   const location = useLocation();
   const navigate = useNavigate();
   const { groupCode, calendarId } = location.state || {};
 
-  // NEU HINZUGEFÜGT: Pending Tasks separat verwalten
-  const [pendingTasks, setPendingTasks] = useState([]);
-
+  // -------------------- useEffect: Events & Tasks --------------------
   useEffect(() => {
     const fetchEventsAndTasks = async () => {
       if (!calendarId) {
@@ -45,7 +60,6 @@ const YourGoogleCalendar = () => {
               end: event.end?.dateTime || event.end?.date,
               description: event.description || 'No description',
               isGoogleEvent: true,
-              // status gibt es in Google nicht -> immer "accepted" annehmen
             }))
           : [];
 
@@ -55,23 +69,20 @@ const YourGoogleCalendar = () => {
         );
 
         const dbTasks = taskResponse.data.success
-          ? taskResponse.data.tasks.map((task) => {
-              return {
-                id: task._id,
-                title: task.title,
-                start: task.date,
-                end: task.date,
-                description: task.description,
-                isGoogleEvent: false,
-                time: task.time || '12:00',
-                status: task.status, // NEU
-              };
-            })
+          ? taskResponse.data.tasks.map((task) => ({
+              id: task._id,
+              title: task.title,
+              start: task.date,
+              end: task.date,
+              description: task.description,
+              isGoogleEvent: false,
+              time: task.time || '12:00',
+              status: task.status,
+            }))
           : [];
 
+        // Kombinieren & Deduplizieren
         const combinedEvents = [...googleEvents, ...dbTasks];
-
-        // Deduplizierung per key: (title|date)
         const eventMap = new Map();
         for (const event of combinedEvents) {
           const eventDate = new Date(event.start).toISOString().split('T')[0];
@@ -85,10 +96,9 @@ const YourGoogleCalendar = () => {
             }
           }
         }
-
         const uniqueEvents = Array.from(eventMap.values());
 
-        // NEU HINZUGEFÜGT: Pending-Tasks rausfiltern für separate Anzeige
+        // Pending & Accepted
         const pending = uniqueEvents.filter((ev) => ev.status === 'pending');
         const acceptedOrGoogle = uniqueEvents.filter(
           (ev) => !ev.status || ev.status === 'accepted'
@@ -106,6 +116,7 @@ const YourGoogleCalendar = () => {
     fetchEventsAndTasks();
   }, [calendarId]);
 
+  // -------------------- useEffect: Calendar Details --------------------
   useEffect(() => {
     const fetchCalendarDetails = async () => {
       if (!calendarId) {
@@ -131,6 +142,7 @@ const YourGoogleCalendar = () => {
     fetchCalendarDetails();
   }, [calendarId]);
 
+  // -------------------- Klick auf Event --------------------
   const handleEventClick = (info) => {
     const event = info.event;
     setSelectedEvent({
@@ -143,13 +155,15 @@ const YourGoogleCalendar = () => {
     setShowModal(true);
   };
 
+  // -------------------- Task löschen --------------------
   const handleDeleteTask = async (taskId) => {
     try {
-      const response = await axios.delete(`http://localhost:5000/tasks/delete-task/${taskId}`, {
-        withCredentials: true
-      });
+      const response = await axios.delete(
+        `http://localhost:5000/tasks/delete-task/${taskId}`,
+        { withCredentials: true }
+      );
       if (response.data.success) {
-        setEvents((prevEvents) => prevEvents.filter((event) => event.id !== taskId));
+        setEvents((prev) => prev.filter((event) => event.id !== taskId));
         setShowModal(false);
         alert('Task deleted successfully!');
       } else {
@@ -161,6 +175,7 @@ const YourGoogleCalendar = () => {
     }
   };
 
+  // -------------------- Task erstellen --------------------
   const handleCreateTask = async () => {
     if (!newTask.title || !newTask.date) {
       alert('Title and date are required!');
@@ -185,7 +200,7 @@ const YourGoogleCalendar = () => {
         setShowTaskForm(false);
         setNewTask({ title: '', description: '', date: '', time: '' });
 
-        // NEU: Da das Task anfangs "pending" ist, direkt in die pendingTasks packen
+        // Pending-Task direkt in pendingTasks
         const created = response.data.task;
         setPendingTasks((prev) => [
           ...prev,
@@ -208,7 +223,7 @@ const YourGoogleCalendar = () => {
     }
   };
 
-  // NEU HINZUGEFÜGT: Accept & Reject
+  // -------------------- Task akzeptieren/rejecten --------------------
   const handleAcceptTask = async (taskId) => {
     try {
       const response = await axios.post(
@@ -218,9 +233,8 @@ const YourGoogleCalendar = () => {
       );
       if (response.data.success) {
         alert(response.data.message);
-
-        // Falls Task jetzt status='accepted' hat -> aus pendingTasks entfernen und zu events verschieben
         if (response.data.status === 'accepted') {
+          // Aus pending raus, in events verschieben
           setPendingTasks((prev) => prev.filter((task) => task.id !== taskId));
           const pendingTask = pendingTasks.find((t) => t.id === taskId);
           if (pendingTask) {
@@ -245,8 +259,6 @@ const YourGoogleCalendar = () => {
       );
       if (response.data.success) {
         alert(response.data.message);
-
-        // Wenn Task direkt gelöscht wurde -> komplett rausfiltern
         if (response.data.message === 'Task rejected and deleted') {
           setPendingTasks((prev) => prev.filter((task) => task.id !== taskId));
         }
@@ -259,12 +271,66 @@ const YourGoogleCalendar = () => {
     }
   };
 
+  // ==================== NOTIZEN-FUNKTIONEN (NEU) =====================
+  const navigateToFolder = (folder) => {
+    setCurrentPath([...currentPath, folder]);
+  };
+
+  const goBack = () => {
+    setCurrentPath(currentPath.slice(0, -1));
+  };
+
+  const addFolder = () => {
+    if (!newFolderName.trim()) return;
+    const updatedStructure = [...notesStructure];
+    let target = updatedStructure;
+
+    currentPath.forEach(folder => {
+      target = target.find(item => item.id === folder.id)?.children || [];
+    });
+
+    target.push({
+      id: Date.now(),
+      name: newFolderName,
+      type: 'folder',
+      children: [],
+    });
+
+    setNotesStructure(updatedStructure);
+    setNewFolderName('');
+    setShowNewFolderPopup(false);
+  };
+
+  const addNote = () => {
+    if (!newNoteName.trim()) return;
+    const updatedStructure = [...notesStructure];
+    let target = updatedStructure;
+
+    currentPath.forEach(folder => {
+      target = target.find(item => item.id === folder.id)?.children || [];
+    });
+
+    target.push({
+      id: Date.now(),
+      name: newNoteName,
+      type: 'note',
+    });
+
+    setNotesStructure(updatedStructure);
+    setNewNoteName('');
+    setShowNewNotePopup(false);
+  };
+
   return (
     <div className="main-page-container">
+      {/* HEADER */}
       <header className="main-page-header">
         <h1>{calendarName}</h1>
         {groupCode && (
-          <div className="group-code-display" style={{ position: 'absolute', top: 20, right: 20 }}>
+          <div
+            className="group-code-display"
+            style={{ position: 'absolute', top: 20, right: 20 }}
+          >
             <p style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               Group Code: <strong>{groupCode}</strong>
               <button
@@ -290,6 +356,7 @@ const YourGoogleCalendar = () => {
         )}
       </header>
 
+      {/* FULLCALENDAR + BUTTONS */}
       <div className="calendar-container" style={{ marginTop: '20px' }}>
         {loading ? (
           <p style={{ textAlign: 'center' }}>Loading...</p>
@@ -301,20 +368,23 @@ const YourGoogleCalendar = () => {
               events={events}
               eventClick={handleEventClick}
             />
+
+            {/* CREATE TASK BUTTON */}
             <button
-              onClick={() => setShowTaskForm(true)}
+              onClick={() => setShowTaskForm(!showTaskForm)}
               style={{
                 marginTop: '20px',
                 padding: '10px 20px',
-                backgroundColor: 'brown',
+                backgroundColor: '#4CAF50',
                 color: 'white',
                 border: 'none',
                 cursor: 'pointer',
               }}
             >
-              Create Task
+              {showTaskForm ? 'Cancel' : 'Create Task'}
             </button>
-            
+
+            {/* DAY VIEW BUTTON */}
             <button
               onClick={() =>
                 navigate('/day-view', {
@@ -336,11 +406,98 @@ const YourGoogleCalendar = () => {
             >
               To the Day View
             </button>
+
+            {/* NOTIZEN-BUTTON */}
+            <button
+              onClick={() => setShowNotesModal(true)}
+              style={{
+                marginTop: '20px',
+                marginLeft: '10px',
+                padding: '10px 20px',
+                backgroundColor: '#FFA500', // Orange
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Notizen
+            </button>
+
+            {/* CREATE TASK FORM */}
+            {showTaskForm && (
+              <div
+                style={{
+                  marginTop: '20px',
+                  backgroundColor: '#f9f9f9',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                }}
+              >
+                <h3>Create a New Task</h3>
+                <div>
+                  <label>Title:</label>
+                  <input
+                    type="text"
+                    value={newTask.title}
+                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                    required
+                    style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
+                  />
+                </div>
+                <div>
+                  <label>Description:</label>
+                  <textarea
+                    value={newTask.description}
+                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                    style={{
+                      width: '100%',
+                      marginBottom: '10px',
+                      padding: '5px',
+                      minHeight: '60px',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label>Date:</label>
+                  <input
+                    type="date"
+                    value={newTask.date}
+                    onChange={(e) => setNewTask({ ...newTask, date: e.target.value })}
+                    required
+                    style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
+                  />
+                </div>
+                <div>
+                  <label>Time (optional):</label>
+                  <input
+                    type="time"
+                    value={newTask.time}
+                    onChange={(e) => setNewTask({ ...newTask, time: e.target.value })}
+                    style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
+                    placeholder="Optional, default 12:00"
+                  />
+                </div>
+                <button
+                  onClick={handleCreateTask}
+                  style={{
+                    marginTop: '10px',
+                    padding: '10px 20px',
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Save Task
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
 
-      {/* NEU HINZUGEFÜGT: Bereich für Pending Tasks */}
+      {/* PENDING TASKS */}
       {!loading && pendingTasks.length > 0 && (
         <div
           style={{
@@ -403,64 +560,82 @@ const YourGoogleCalendar = () => {
         </div>
       )}
 
-      {/* Modal für Event-Details */}
+      {/* EVENT-DETAILS-MODAL */}
       {showModal && selectedEvent && (
-        <>
-          <div
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              backgroundColor: 'white',
-              color: 'black',
-              padding: '20px',
-              borderRadius: '8px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-              zIndex: 1000,
-            }}
-          >
-            <h3 style={{ marginBottom: '10px' }}>{selectedEvent.title}</h3>
-            <p>
-              <strong>Date:</strong>{' '}
-              {new Date(selectedEvent.date).toLocaleString()}
-            </p>
-            <p>
-              <strong>Description:</strong> {selectedEvent.description}
-            </p>
-            {!selectedEvent.isGoogleEvent && (
-              <button
-                onClick={() => handleDeleteTask(selectedEvent.id)}
-                style={{
-                  marginTop: '10px',
-                  padding: '10px 20px',
-                  backgroundColor: '#FF6347',
-                  color: 'white',
-                  border: 'none',
-                  cursor: 'pointer',
-                  marginLeft: '10px',
-                }}
-              >
-                Delete Task
-              </button>
-            )}
+        <div
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'white',
+            color: 'black',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            zIndex: 1000,
+          }}
+        >
+          <h3 style={{ marginBottom: '10px' }}>{selectedEvent.title}</h3>
+          <p>
+            <strong>Date:</strong> {new Date(selectedEvent.date).toLocaleString()}
+          </p>
+          <p>
+            <strong>Description:</strong> {selectedEvent.description}
+          </p>
+          {!selectedEvent.isGoogleEvent && (
             <button
-              onClick={() => setShowModal(false)}
+              onClick={() => handleDeleteTask(selectedEvent.id)}
               style={{
                 marginTop: '10px',
                 padding: '10px 20px',
-                backgroundColor: '#4CAF50',
+                backgroundColor: '#FF6347',
                 color: 'white',
                 border: 'none',
                 cursor: 'pointer',
                 marginLeft: '10px',
               }}
             >
-              Close
+              Delete Task
             </button>
-          </div>
-          <div
+          )}
+          <button
             onClick={() => setShowModal(false)}
+            style={{
+              marginTop: '10px',
+              padding: '10px 20px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+              marginLeft: '10px',
+            }}
+          >
+            Close
+          </button>
+        </div>
+      )}
+      {showModal && (
+        <div
+          onClick={() => setShowModal(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 999,
+          }}
+        />
+      )}
+
+      {/* NOTIZEN-POPUP (grosses Fenster) */}
+      {showNotesModal && (
+        <>
+          {/* Overlay zum Schliessen */}
+          <div
+            onClick={() => setShowNotesModal(false)}
             style={{
               position: 'fixed',
               top: 0,
@@ -471,164 +646,271 @@ const YourGoogleCalendar = () => {
               zIndex: 999,
             }}
           />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: 'white',
+              color: 'black',              // <-- Hier schwarzer Text
+              borderRadius: '8px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+              zIndex: 1000,
+              width: '700px',
+              height: '600px',
+              overflow: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '20px',
+            }}
+          >
+            <h2 style={{ marginBottom: '10px', color: 'black' }}>Notizen & Ordner</h2>
+
+            {/* Erstellen-Buttons oben rechts */}
+            <div style={{ position: 'absolute', top: '20px', right: '30px', display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => setShowNewFolderPopup(true)}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: 'green',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Ordner +
+              </button>
+              <button
+                onClick={() => setShowNewNotePopup(true)}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: 'blue',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Notiz +
+              </button>
+            </div>
+
+            {/* Aktueller Pfad */}
+            <p>
+              <strong>Pfad:</strong>{' '}
+              {currentPath.length > 0
+                ? currentPath.map(folder => folder.name).join(' > ')
+                : 'Hauptverzeichnis'}
+            </p>
+
+            {/* Zurück-Button */}
+            {currentPath.length > 0 && (
+              <button
+                onClick={goBack}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: 'gray',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  marginBottom: '10px',
+                }}
+              >
+                ⬅️ Zurück
+              </button>
+            )}
+
+            {/* Ordner / Notizen-Liste */}
+            <ul style={{ flex: '1', margin: 0, padding: 0, listStyle: 'none' }}>
+              {(currentPath.length === 0
+                ? notesStructure
+                : currentPath[currentPath.length - 1].children
+              ).map(item => (
+                <li key={item.id} style={{ cursor: 'pointer', padding: '5px 0' }}>
+                  {item.type === 'folder' ? (
+                    <span
+                      onClick={() => navigateToFolder(item)}
+                      style={{ fontWeight: 'bold', color: 'blue' }}
+                    >
+                      📁 {item.name}
+                    </span>
+                  ) : (
+                    <span>📝 {item.name}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            {/* Schliessen-Button unten in der Mitte */}
+            <button
+              onClick={() => setShowNotesModal(false)}
+              style={{
+                alignSelf: 'center',
+                marginTop: '10px',
+                padding: '10px 20px',
+                backgroundColor: 'red',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Schliessen
+            </button>
+          </div>
         </>
       )}
 
-              {/* Modal für das Erstellen eines Tasks */}
-        {showTaskForm && (
-          <>
-            {/* Overlay */}
-            <div
-              onClick={() => setShowTaskForm(false)}
+      {/* POP-UP FÜR NEUEN ORDNER */}
+      {showNewFolderPopup && (
+        <>
+          <div
+            onClick={() => setShowNewFolderPopup(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 9999,
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: 'white',
+              color: 'black', // <-- schwarzer Text
+              borderRadius: '8px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+              padding: '20px',
+              zIndex: 10000,
+              width: '300px',
+            }}
+          >
+            <h3 style={{ marginBottom: '10px', color: 'black' }}>Neuen Ordner erstellen</h3>
+            <input
+              type="text"
+              placeholder="Ordnername"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
                 width: '100%',
-                height: '100%',
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                zIndex: 999,
+                marginBottom: '10px',
+                padding: '5px',
+                color: 'black',
+                borderColor: '#ccc',
+                backgroundColor: 'white',
               }}
             />
-
-            {/* Modalfenster */}
-            <div
-              style={{
-                position: 'fixed',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                backgroundColor: '#f0f0f0',    // Hellgrau
-                padding: '20px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
-                zIndex: 1000,
-                width: '320px',               // Fixe Breite
-                maxWidth: '90%',
-                color: 'black',
-              }}
-            >
-              <h3 style={{ 
-                marginBottom: '20px', 
-                textAlign: 'center' 
-              }}>
-                Create a New Task
-              </h3>
-              
-              {/* Title */}
-              <label style={{ display: 'block', marginBottom: '6px' }}>Title:</label>
-              <input
-                type="text"
-                placeholder="Enter a title"
-                value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                required
+            <div style={{ textAlign: 'right' }}>
+              <button
+                onClick={() => setShowNewFolderPopup(false)}
                 style={{
-                  width: '100%',
-                  marginBottom: '12px',
-                  padding: '8px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  backgroundColor: '#3f3f3f',
-                  color: '#fff',
+                  marginRight: '10px',
+                  padding: '6px 12px',
+                  backgroundColor: 'gray',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
                 }}
-              />
-
-              {/* Description */}
-              <label style={{ display: 'block', marginBottom: '6px' }}>Description:</label>
-              <textarea
-                placeholder="Describe your task..."
-                value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={addFolder}
                 style={{
-                  width: '100%',
-                  marginBottom: '12px',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  backgroundColor: '#3f3f3f',
-                  color: '#fff',
-                  minHeight: '60px',
-                  resize: 'vertical', // optional
+                  padding: '6px 12px',
+                  backgroundColor: 'green',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
                 }}
-              />
-
-              {/* Date */}
-              <label style={{ display: 'block', marginBottom: '6px' }}>Date:</label>
-              {/* Für das Placeholder "tt.mm.jjjj" musst du ggf. type="text" verwenden, 
-                  da HTML-Datepicker placeholders oft ignorieren. 
-                  Unten als Beispiel "text" + pattern. */}
-              <input
-                type="text"
-                placeholder="tt.mm.jjjj"
-                pattern="\d{2}\.\d{2}\.\d{4}"
-                value={newTask.date}
-                onChange={(e) => setNewTask({ ...newTask, date: e.target.value })}
-                required
-                style={{
-                  width: '100%',
-                  marginBottom: '12px',
-                  padding: '8px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  backgroundColor: '#3f3f3f',
-                  color: '#fff',
-                }}
-              />
-
-              {/* Time */}
-              <label style={{ display: 'block', marginBottom: '6px' }}>Time (optional):</label>
-              <input
-                type="text"
-                placeholder="--:--"
-                value={newTask.time}
-                onChange={(e) => setNewTask({ ...newTask, time: e.target.value })}
-                style={{
-                  width: '100%',
-                  marginBottom: '16px',
-                  padding: '8px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  backgroundColor: '#3f3f3f',
-                  color: '#fff',
-                }}
-              />
-
-              {/* Button-Bereich */}
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                gap: '10px' 
-              }}>
-                <button
-                  onClick={() => setShowTaskForm(false)}
-                  style={{
-                    padding: '10px 20px',
-                    backgroundColor: 'gray',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreateTask}
-                  style={{
-                    padding: '10px 20px',
-                    backgroundColor: '#4CAF50',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Save Task
-                </button>
-              </div>
+              >
+                Erstellen
+              </button>
             </div>
-          </>
-        )}
+          </div>
+        </>
+      )}
+
+      {/* POP-UP FÜR NEUE NOTIZ */}
+      {showNewNotePopup && (
+        <>
+          <div
+            onClick={() => setShowNewNotePopup(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 9999,
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: 'white',
+              color: 'black', // <-- schwarzer Text
+              borderRadius: '8px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+              padding: '20px',
+              zIndex: 10000,
+              width: '300px',
+            }}
+          >
+            <h3 style={{ marginBottom: '10px', color: 'black' }}>Neue Notiz erstellen</h3>
+            <input
+              type="text"
+              placeholder="Notizname"
+              value={newNoteName}
+              onChange={(e) => setNewNoteName(e.target.value)}
+              style={{
+                width: '100%',
+                marginBottom: '10px',
+                padding: '5px',
+                color: 'black',
+                borderColor: '#ccc',
+                backgroundColor: 'white',
+              }}
+            />
+            <div style={{ textAlign: 'right' }}>
+              <button
+                onClick={() => setShowNewNotePopup(false)}
+                style={{
+                  marginRight: '10px',
+                  padding: '6px 12px',
+                  backgroundColor: 'gray',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={addNote}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: 'blue',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Erstellen
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
