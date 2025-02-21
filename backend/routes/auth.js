@@ -76,44 +76,45 @@ router.get(
 // -----------------------------------------
 // POST /create-calendar
 // -----------------------------------------
+
 router.post('/create-calendar', async (req, res) => {
     const { groupName } = req.body;
-
-    if (!req.user) {
-        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    if (!groupName) {
+        return res.status(400).json({ success: false, message: 'Gruppenname fehlt!' });
     }
 
     try {
+        console.log('📌 Erstelle Kalender:', groupName);
         const calendarId = await createCalendar(groupName);
 
-        // 6-stelligen Code generieren (z. B. 'a1b2c3')
-        const groupCode = crypto.randomBytes(3).toString('hex');
+        const groupCode = Math.random().toString(36).substr(2, 6).toUpperCase();
+        console.log('📌 Generierter Code:', groupCode);
 
-        // NEU: owner: req.user._id => Wer hat den Kalender erstellt?
         const calendar = await Calendar.create({
             groupName,
             calendarId,
             groupCode,
             owner: req.user._id,
-            membersCount: 1, // Startwert (kann später durch Beitritte erhöht werden)
-        });
-          
+            members: [req.user._id], // ← Hier den Ersteller direkt als Mitglied hinzufügen!
+        });       
 
-        console.log('Kalender-ID:', calendarId);
+        console.log('✅ Kalender erfolgreich erstellt:', calendar);
         res.status(201).json({
             success: true,
             groupCode,
             calendarId,
-            message: `Kalender '${groupName}' erfolgreich erstellt! Teilen Sie diesen Code: ${groupCode}`,
+            calendar,
         });
     } catch (error) {
-        console.error('Fehler bei der Kalendererstellung:', error);
+        console.error('❌ Fehler beim Erstellen des Kalenders:', error);
         res.status(500).json({
             success: false,
-            message: 'Fehler beim Erstellen des Kalenders',
+            message: 'Interner Fehler beim Erstellen des Kalenders',
+            error: error.message,
         });
     }
 });
+
 
 // -------------------
 // (Restliche Routen) 
