@@ -30,9 +30,12 @@ const YourGoogleCalendar = () => {
   const [showNewFolderPopup, setShowNewFolderPopup] = useState(false);
   const [showNewNotePopup, setShowNewNotePopup] = useState(false);
 
-  // Eingabe-Felder im Popup
+  // Eingabe-Felder im Popup (Neuer Ordner / Neue Notiz)
   const [newFolderName, setNewFolderName] = useState('');
   const [newNoteName, setNewNoteName] = useState('');
+
+  // *** Editor-Pop-up für eine Notiz ***
+  const [editingNote, setEditingNote] = useState(null); // { id, title, content }
 
   // Router location/state
   const location = useLocation();
@@ -277,7 +280,7 @@ const YourGoogleCalendar = () => {
   function buildTree(allNotes, parentId = null) {
     return allNotes
       .filter((note) => {
-        const p = note.parent ? note.parent._id || note.parent : null; 
+        const p = note.parent ? note.parent._id || note.parent : null;
         return parentId === null ? p === null : p === parentId;
       })
       .map((note) => {
@@ -287,29 +290,29 @@ const YourGoogleCalendar = () => {
           id: note._id,
           name: note.title,
           type: note.isFolder ? 'folder' : 'note',
+          content: note.content || '', // <== Speichern für Editor
           children,
         };
       });
   }
 
-// Ruft /notes/all/:calendarId auf
-const reloadAllNotes = async () => {
-  if (!calendarId) return;
-  try {
-    const resp = await axios.get(
-      `http://localhost:5000/notes/all/${calendarId}`,
-      { withCredentials: true }
-    );
-    if (resp.data.success) {
-      const allNotes = resp.data.notes; 
-      const tree = buildTree(allNotes, null);
-      setNotesStructure(tree);
+  // Ruft /notes/all/:calendarId auf
+  const reloadAllNotes = async () => {
+    if (!calendarId) return;
+    try {
+      const resp = await axios.get(
+        `http://localhost:5000/notes/all/${calendarId}`,
+        { withCredentials: true }
+      );
+      if (resp.data.success) {
+        const allNotes = resp.data.notes;
+        const tree = buildTree(allNotes, null);
+        setNotesStructure(tree);
+      }
+    } catch (err) {
+      console.error('Fehler beim Laden der Notizen:', err);
     }
-  } catch (err) {
-    console.error('Fehler beim Laden der Notizen:', err);
-  }
-};
-
+  };
 
   // c) Wenn Notizen-Modal geöffnet → alle Notizen laden
   useEffect(() => {
@@ -318,20 +321,21 @@ const reloadAllNotes = async () => {
     }
   }, [showNotesModal]);
 
+  // d) Ordner erstellen
   const addFolder = async () => {
     if (!newFolderName.trim()) return;
     const parentObj = currentPath.length > 0 ? currentPath[currentPath.length - 1] : null;
     const parentId = parentObj ? parentObj.id : null;
-  
+
     try {
       const resp = await axios.post(
         'http://localhost:5000/notes',
         {
-          calendarId,    // <- ist ein String, zB "xyz@group.calendar.google.com"
+          calendarId,
           title: newFolderName,
-          content: '',
+          content: '', // Ordner hat kein content
           isFolder: true,
-          parent: parentId, // kann null sein
+          parent: parentId,
         },
         { withCredentials: true }
       );
@@ -344,8 +348,9 @@ const reloadAllNotes = async () => {
     }
     setNewFolderName('');
     setShowNewFolderPopup(false);
-  };  
+  };
 
+  // e) Notiz erstellen
   const addNote = async () => {
     if (!newNoteName.trim()) return;
     const parentObj = currentPath.length > 0 ? currentPath[currentPath.length - 1] : null;
@@ -357,7 +362,7 @@ const reloadAllNotes = async () => {
         {
           calendarId,
           title: newNoteName,
-          content: '', // Optionally we can add content or a separate input
+          content: '',
           isFolder: false,
           parent: parentId,
         },
@@ -374,14 +379,74 @@ const reloadAllNotes = async () => {
     setShowNewNotePopup(false);
   };
 
-  // e) In Ordner navigieren
+  // f) Ordner-Navigation
   const navigateToFolder = (folder) => {
-    setCurrentPath([...currentPath, folder]);
+    // Falls user einen Ordner anklickt => tiefer navigieren
+    if (folder.type === 'folder') {
+      setCurrentPath([...currentPath, folder]);
+    } else {
+      // KLICK auf Notiz => Editor öffnen
+      setEditingNote({
+        id: folder.id,
+        title: folder.name,
+        content: folder.content || '',
+      });
+    }
   };
 
-  // f) Zurück
+  // g) Zurück
   const goBack = () => {
     setCurrentPath(currentPath.slice(0, -1));
+  };
+
+  // h) Notiz oder Ordner löschen
+  const deleteItem = async (item) => {
+    if (!window.confirm(`Möchtest du "${item.name}" wirklich löschen?`)) return;
+    try {
+      const resp = await axios.delete(
+        `http://localhost:5000/notes/${item.id}`,
+        { withCredentials: true }
+      );
+      if (resp.data.success) {
+        // neu laden
+        reloadAllNotes();
+        // Falls wir uns gerade in der Notiz befinden, Editor schliessen
+        if (editingNote && editingNote.id === item.id) {
+          setEditingNote(null);
+        }
+      } else {
+        alert(resp.data.message || 'Löschen fehlgeschlagen');
+      }
+    } catch (err) {
+      console.error('Fehler beim Löschen:', err);
+      alert('Fehler beim Löschen.');
+    }
+  };
+
+  // i) Notiz bearbeiten -> PUT /notes/:id
+  const saveEditedNote = async () => {
+    if (!editingNote) return;
+    try {
+      const resp = await axios.put(
+        `http://localhost:5000/notes/${editingNote.id}`,
+        {
+          title: editingNote.title,
+          content: editingNote.content,
+        },
+        { withCredentials: true }
+      );
+      if (resp.data.success) {
+        alert('Notiz aktualisiert!');
+        // Editor schliessen
+        setEditingNote(null);
+        reloadAllNotes();
+      } else {
+        alert('Fehler beim Update der Notiz');
+      }
+    } catch (err) {
+      console.error('Fehler beim Bearbeiten der Notiz:', err);
+      alert('Fehler beim Bearbeiten der Notiz');
+    }
   };
 
   // ----------------------------------------------------------
@@ -480,7 +545,7 @@ const reloadAllNotes = async () => {
                 marginTop: '20px',
                 marginLeft: '10px',
                 padding: '10px 20px',
-                backgroundColor: '#FFA500', 
+                backgroundColor: '#FFA500',
                 color: 'white',
                 border: 'none',
                 cursor: 'pointer',
@@ -793,17 +858,41 @@ const reloadAllNotes = async () => {
                   ? notesStructure // Root
                   : currentPath[currentPath.length - 1].children
               ).map(item => (
-                <li key={item.id} style={{ cursor: 'pointer', padding: '5px 0' }}>
+                <li
+                  key={item.id}
+                  style={{ padding: '5px 0' }}
+                >
                   {item.type === 'folder' ? (
                     <span
                       onClick={() => navigateToFolder(item)}
-                      style={{ fontWeight: 'bold', color: 'blue' }}
+                      style={{ fontWeight: 'bold', color: 'blue', marginRight: '10px', cursor: 'pointer' }}
                     >
                       📁 {item.name}
                     </span>
                   ) : (
-                    <span>📝 {item.name}</span>
+                    <span
+                      onClick={() => navigateToFolder(item)}
+                      style={{ marginRight: '10px', cursor: 'pointer' }}
+                    >
+                      📝 {item.name}
+                    </span>
                   )}
+                  {/* Delete Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteItem(item);
+                    }}
+                    style={{
+                      padding: '3px 6px',
+                      backgroundColor: 'red',
+                      color: 'white',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Löschen
+                  </button>
                 </li>
               ))}
             </ul>
@@ -973,6 +1062,94 @@ const reloadAllNotes = async () => {
                 }}
               >
                 Erstellen
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* POP-UP: NOTIZ BEARBEITEN */}
+      {editingNote && (
+        <>
+          <div
+            onClick={() => setEditingNote(null)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 9999,
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: 'white',
+              color: 'black',
+              borderRadius: '8px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+              padding: '20px',
+              zIndex: 10000,
+              width: '500px',
+              height: '400px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <h2 style={{ marginBottom: '10px' }}>Notiz bearbeiten</h2>
+            {/* Titel */}
+            <input
+              type="text"
+              style={{
+                marginBottom: '10px',
+                padding: '6px',
+                border: '1px solid #ccc',
+                color: 'black',
+              }}
+              value={editingNote.title}
+              onChange={(e) => setEditingNote({ ...editingNote, title: e.target.value })}
+            />
+            {/* Content */}
+            <textarea
+              style={{
+                flex: '1',
+                marginBottom: '10px',
+                padding: '6px',
+                border: '1px solid #ccc',
+                color: 'black',
+              }}
+              value={editingNote.content}
+              onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={() => setEditingNote(null)}
+                style={{
+                  backgroundColor: 'gray',
+                  color: 'white',
+                  padding: '8px 16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={saveEditedNote}
+                style={{
+                  backgroundColor: 'green',
+                  color: 'white',
+                  padding: '8px 16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Speichern
               </button>
             </div>
           </div>

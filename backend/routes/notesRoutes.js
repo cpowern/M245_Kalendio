@@ -73,15 +73,18 @@ router.delete('/:noteId', ensureAuthenticated, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Notiz nicht gefunden' });
     }
 
-    // Alle Kinder löschen
+    // Alle Kinder löschen (rekursiv)
     await Note.deleteMany({ parent: noteToDelete._id });
-    // Haupt-Dokument löschen
+
+    // Jetzt sich selbst löschen
     await Note.findByIdAndDelete(noteToDelete._id);
 
     res.json({ success: true, message: 'Notiz/Ordner gelöscht' });
   } catch (err) {
+    console.error('Fehler beim Löschen der Notiz:', err);
     res.status(500).json({ success: false, message: 'Fehler beim Löschen der Notiz' });
   }
 });
+
 
 module.exports = router;
