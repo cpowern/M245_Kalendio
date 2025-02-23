@@ -7,8 +7,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import '../styles/MainPage.css';
 
 const YourGoogleCalendar = () => {
-  // -------------------- Vorhandene States --------------------
-  const [events, setEvents] = useState([]); 
+  // -------------------- STATES (Termine, Tasks, etc.) --------------------
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [calendarName, setCalendarName] = useState('Your Google Calendar');
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -19,24 +19,29 @@ const YourGoogleCalendar = () => {
   // -------------------- Pending Tasks --------------------
   const [pendingTasks, setPendingTasks] = useState([]);
 
-  // -------------------- Notizen-Pop-up States --------------------
-  const [showNotesModal, setShowNotesModal] = useState(false);  
+  // -------------------- NOTIZEN: UI States --------------------
+  const [showNotesModal, setShowNotesModal] = useState(false);
+
+  // "notesStructure": bereits aufgebaute Baumstruktur für das UI
   const [notesStructure, setNotesStructure] = useState([]);
   const [currentPath, setCurrentPath] = useState([]);
-  
-  // Zwei kleine Pop-ups fürs Erstellen
+
+  // Popups zum Erstellen von Ordner/Notiz
   const [showNewFolderPopup, setShowNewFolderPopup] = useState(false);
   const [showNewNotePopup, setShowNewNotePopup] = useState(false);
 
-  // Eingabefelder in den kleinen Pop-ups
+  // Eingabe-Felder im Popup
   const [newFolderName, setNewFolderName] = useState('');
   const [newNoteName, setNewNoteName] = useState('');
 
+  // Router location/state
   const location = useLocation();
   const navigate = useNavigate();
   const { groupCode, calendarId } = location.state || {};
 
-  // -------------------- useEffect: Events & Tasks --------------------
+  // ----------------------------------------------------------
+  // 1) EVENTS & TASKS
+  // ----------------------------------------------------------
   useEffect(() => {
     const fetchEventsAndTasks = async () => {
       if (!calendarId) {
@@ -44,21 +49,19 @@ const YourGoogleCalendar = () => {
         setLoading(false);
         return;
       }
-
       try {
         // Google Events
         const googleResponse = await axios.get(
           `http://localhost:5000/auth/events/${calendarId}`,
           { withCredentials: true }
         );
-
         const googleEvents = googleResponse.data.success
-          ? googleResponse.data.events.map((event) => ({
-              id: event.id,
-              title: event.summary || 'No Title',
-              start: event.start.dateTime || event.start.date,
-              end: event.end?.dateTime || event.end?.date,
-              description: event.description || 'No description',
+          ? googleResponse.data.events.map((ev) => ({
+              id: ev.id,
+              title: ev.summary || 'No Title',
+              start: ev.start.dateTime || ev.start.date,
+              end: ev.end?.dateTime || ev.end?.date,
+              description: ev.description || 'No description',
               isGoogleEvent: true,
             }))
           : [];
@@ -67,7 +70,6 @@ const YourGoogleCalendar = () => {
         const taskResponse = await axios.get(
           `http://localhost:5000/tasks/debug-tasks/${calendarId}`
         );
-
         const dbTasks = taskResponse.data.success
           ? taskResponse.data.tasks.map((task) => ({
               id: task._id,
@@ -84,21 +86,22 @@ const YourGoogleCalendar = () => {
         // Kombinieren & Deduplizieren
         const combinedEvents = [...googleEvents, ...dbTasks];
         const eventMap = new Map();
-        for (const event of combinedEvents) {
-          const eventDate = new Date(event.start).toISOString().split('T')[0];
-          const key = `${event.title}|${eventDate}`;
+        for (const e of combinedEvents) {
+          const eventDate = new Date(e.start).toISOString().split('T')[0];
+          const key = `${e.title}|${eventDate}`;
           if (!eventMap.has(key)) {
-            eventMap.set(key, event);
+            eventMap.set(key, e);
           } else {
             const existing = eventMap.get(key);
-            if (existing.isGoogleEvent && !event.isGoogleEvent) {
-              eventMap.set(key, event);
+            // Falls existing isGoogleEvent -> wir nehmen den DB-Task
+            if (existing.isGoogleEvent && !e.isGoogleEvent) {
+              eventMap.set(key, e);
             }
           }
         }
         const uniqueEvents = Array.from(eventMap.values());
 
-        // Pending & Accepted
+        // Pending vs. accepted
         const pending = uniqueEvents.filter((ev) => ev.status === 'pending');
         const acceptedOrGoogle = uniqueEvents.filter(
           (ev) => !ev.status || ev.status === 'accepted'
@@ -112,58 +115,58 @@ const YourGoogleCalendar = () => {
         setLoading(false);
       }
     };
-
     fetchEventsAndTasks();
   }, [calendarId]);
 
-  // -------------------- useEffect: Calendar Details --------------------
+  // ----------------------------------------------------------
+  // 2) CALENDAR DETAILS
+  // ----------------------------------------------------------
   useEffect(() => {
     const fetchCalendarDetails = async () => {
-      if (!calendarId) {
-        return;
-      }
-
+      if (!calendarId) return;
       try {
-        const response = await axios.get(`http://localhost:5000/auth/list-calendars`, {
+        const response = await axios.get('http://localhost:5000/auth/list-calendars', {
           withCredentials: true,
         });
-
         if (response.data.success) {
-          const calendar = response.data.calendars.find((cal) => cal.id === calendarId);
-          if (calendar) {
-            setCalendarName(calendar.summary);
+          const foundCal = response.data.calendars.find((c) => c.id === calendarId);
+          if (foundCal) {
+            setCalendarName(foundCal.summary);
           }
         }
       } catch (error) {
         console.error('Error fetching calendar name:', error);
       }
     };
-
     fetchCalendarDetails();
   }, [calendarId]);
 
-  // -------------------- Klick auf Event --------------------
+  // ----------------------------------------------------------
+  // 3) EVENT-KLICK
+  // ----------------------------------------------------------
   const handleEventClick = (info) => {
-    const event = info.event;
+    const ev = info.event;
     setSelectedEvent({
-      id: event.id,
-      title: event.title,
-      date: event.startStr,
-      description: event.extendedProps?.description || 'No description available',
-      isGoogleEvent: event.extendedProps?.isGoogleEvent,
+      id: ev.id,
+      title: ev.title,
+      date: ev.startStr,
+      description: ev.extendedProps?.description || 'No description available',
+      isGoogleEvent: ev.extendedProps?.isGoogleEvent,
     });
     setShowModal(true);
   };
 
-  // -------------------- Task löschen --------------------
+  // ----------------------------------------------------------
+  // 4) TASKS: Delete, Create, Accept, Reject
+  // ----------------------------------------------------------
   const handleDeleteTask = async (taskId) => {
     try {
-      const response = await axios.delete(
-        `http://localhost:5000/tasks/delete-task/${taskId}`,
-        { withCredentials: true }
-      );
-      if (response.data.success) {
-        setEvents((prev) => prev.filter((event) => event.id !== taskId));
+      const resp = await axios.delete(`http://localhost:5000/tasks/delete-task/${taskId}`, {
+        withCredentials: true,
+      });
+      if (resp.data.success) {
+        // remove from events
+        setEvents((prev) => prev.filter((e) => e.id !== taskId));
         setShowModal(false);
         alert('Task deleted successfully!');
       } else {
@@ -171,19 +174,17 @@ const YourGoogleCalendar = () => {
       }
     } catch (error) {
       console.error('Error deleting task:', error);
-      alert('You dont have the authority to delete this task');
+      alert('No authority to delete this task');
     }
   };
 
-  // -------------------- Task erstellen --------------------
   const handleCreateTask = async () => {
     if (!newTask.title || !newTask.date) {
       alert('Title and date are required!');
       return;
     }
-
     try {
-      const response = await axios.post(
+      const resp = await axios.post(
         'http://localhost:5000/tasks/create-task',
         {
           calendarId,
@@ -194,14 +195,12 @@ const YourGoogleCalendar = () => {
         },
         { withCredentials: true }
       );
-
-      if (response.data.success) {
+      if (resp.data.success) {
         alert('Task created successfully!');
         setShowTaskForm(false);
         setNewTask({ title: '', description: '', date: '', time: '' });
-
-        // Pending-Task direkt in pendingTasks
-        const created = response.data.task;
+        // Neuer Task → pending
+        const created = resp.data.task;
         setPendingTasks((prev) => [
           ...prev,
           {
@@ -223,26 +222,25 @@ const YourGoogleCalendar = () => {
     }
   };
 
-  // -------------------- Task akzeptieren/rejecten --------------------
   const handleAcceptTask = async (taskId) => {
     try {
-      const response = await axios.post(
+      const resp = await axios.post(
         `http://localhost:5000/tasks/accept-task/${taskId}`,
         {},
         { withCredentials: true }
       );
-      if (response.data.success) {
-        alert(response.data.message);
-        if (response.data.status === 'accepted') {
-          // Aus pending raus, in events verschieben
-          setPendingTasks((prev) => prev.filter((task) => task.id !== taskId));
-          const pendingTask = pendingTasks.find((t) => t.id === taskId);
-          if (pendingTask) {
-            setEvents((prevEvents) => [...prevEvents, { ...pendingTask, status: 'accepted' }]);
+      if (resp.data.success) {
+        alert(resp.data.message);
+        if (resp.data.status === 'accepted') {
+          setPendingTasks((prev) => prev.filter((t) => t.id !== taskId));
+          // Move from pending to accepted
+          const found = pendingTasks.find((t) => t.id === taskId);
+          if (found) {
+            setEvents((prevEvents) => [...prevEvents, { ...found, status: 'accepted' }]);
           }
         }
       } else {
-        alert(response.data.message || 'Could not accept task.');
+        alert(resp.data.message || 'Could not accept task.');
       }
     } catch (error) {
       console.error('Error accepting task:', error);
@@ -252,18 +250,18 @@ const YourGoogleCalendar = () => {
 
   const handleRejectTask = async (taskId) => {
     try {
-      const response = await axios.post(
+      const resp = await axios.post(
         `http://localhost:5000/tasks/reject-task/${taskId}`,
         {},
         { withCredentials: true }
       );
-      if (response.data.success) {
-        alert(response.data.message);
-        if (response.data.message === 'Task rejected and deleted') {
-          setPendingTasks((prev) => prev.filter((task) => task.id !== taskId));
+      if (resp.data.success) {
+        alert(resp.data.message);
+        if (resp.data.message === 'Task rejected and deleted') {
+          setPendingTasks((prev) => prev.filter((t) => t.id !== taskId));
         }
       } else {
-        alert(response.data.message || 'Could not reject task.');
+        alert(resp.data.message || 'Could not reject task.');
       }
     } catch (error) {
       console.error('Error rejecting task:', error);
@@ -271,56 +269,124 @@ const YourGoogleCalendar = () => {
     }
   };
 
-  // ==================== NOTIZEN-FUNKTIONEN (NEU) =====================
-  const navigateToFolder = (folder) => {
-    setCurrentPath([...currentPath, folder]);
-  };
+  // ----------------------------------------------------------
+  // 5) NOTIZEN-FUNKTIONEN (Variante A: Einzeldokument pro Note)
+  // ----------------------------------------------------------
 
-  const goBack = () => {
-    setCurrentPath(currentPath.slice(0, -1));
-  };
+  // a) buildTree: Baut die verschachtelte Struktur (Ordner/Notizen) aus flacher Liste
+  function buildTree(allNotes, parentId = null) {
+    return allNotes
+      .filter((note) => {
+        const p = note.parent ? note.parent._id || note.parent : null; 
+        return parentId === null ? p === null : p === parentId;
+      })
+      .map((note) => {
+        // Kinder suchen
+        const children = buildTree(allNotes, note._id);
+        return {
+          id: note._id,
+          name: note.title,
+          type: note.isFolder ? 'folder' : 'note',
+          children,
+        };
+      });
+  }
 
-  const addFolder = () => {
+// Ruft /notes/all/:calendarId auf
+const reloadAllNotes = async () => {
+  if (!calendarId) return;
+  try {
+    const resp = await axios.get(
+      `http://localhost:5000/notes/all/${calendarId}`,
+      { withCredentials: true }
+    );
+    if (resp.data.success) {
+      const allNotes = resp.data.notes; 
+      const tree = buildTree(allNotes, null);
+      setNotesStructure(tree);
+    }
+  } catch (err) {
+    console.error('Fehler beim Laden der Notizen:', err);
+  }
+};
+
+
+  // c) Wenn Notizen-Modal geöffnet → alle Notizen laden
+  useEffect(() => {
+    if (showNotesModal) {
+      reloadAllNotes();
+    }
+  }, [showNotesModal]);
+
+  const addFolder = async () => {
     if (!newFolderName.trim()) return;
-    const updatedStructure = [...notesStructure];
-    let target = updatedStructure;
-
-    currentPath.forEach(folder => {
-      target = target.find(item => item.id === folder.id)?.children || [];
-    });
-
-    target.push({
-      id: Date.now(),
-      name: newFolderName,
-      type: 'folder',
-      children: [],
-    });
-
-    setNotesStructure(updatedStructure);
+    const parentObj = currentPath.length > 0 ? currentPath[currentPath.length - 1] : null;
+    const parentId = parentObj ? parentObj.id : null;
+  
+    try {
+      const resp = await axios.post(
+        'http://localhost:5000/notes',
+        {
+          calendarId,    // <- ist ein String, zB "xyz@group.calendar.google.com"
+          title: newFolderName,
+          content: '',
+          isFolder: true,
+          parent: parentId, // kann null sein
+        },
+        { withCredentials: true }
+      );
+      if (resp.data.success) {
+        // neu laden
+        reloadAllNotes();
+      }
+    } catch (err) {
+      console.error('Fehler beim Erstellen des Ordners:', err);
+    }
     setNewFolderName('');
     setShowNewFolderPopup(false);
-  };
+  };  
 
-  const addNote = () => {
+  const addNote = async () => {
     if (!newNoteName.trim()) return;
-    const updatedStructure = [...notesStructure];
-    let target = updatedStructure;
+    const parentObj = currentPath.length > 0 ? currentPath[currentPath.length - 1] : null;
+    const parentId = parentObj ? parentObj.id : null;
 
-    currentPath.forEach(folder => {
-      target = target.find(item => item.id === folder.id)?.children || [];
-    });
-
-    target.push({
-      id: Date.now(),
-      name: newNoteName,
-      type: 'note',
-    });
-
-    setNotesStructure(updatedStructure);
+    try {
+      const resp = await axios.post(
+        'http://localhost:5000/notes',
+        {
+          calendarId,
+          title: newNoteName,
+          content: '', // Optionally we can add content or a separate input
+          isFolder: false,
+          parent: parentId,
+        },
+        { withCredentials: true }
+      );
+      if (resp.data.success) {
+        // Neu laden
+        await reloadAllNotes();
+      }
+    } catch (err) {
+      console.error('Fehler beim Erstellen der Notiz:', err);
+    }
     setNewNoteName('');
     setShowNewNotePopup(false);
   };
 
+  // e) In Ordner navigieren
+  const navigateToFolder = (folder) => {
+    setCurrentPath([...currentPath, folder]);
+  };
+
+  // f) Zurück
+  const goBack = () => {
+    setCurrentPath(currentPath.slice(0, -1));
+  };
+
+  // ----------------------------------------------------------
+  // RENDER
+  // ----------------------------------------------------------
   return (
     <div className="main-page-container">
       {/* HEADER */}
@@ -414,7 +480,7 @@ const YourGoogleCalendar = () => {
                 marginTop: '20px',
                 marginLeft: '10px',
                 padding: '10px 20px',
-                backgroundColor: '#FFA500', // Orange
+                backgroundColor: '#FFA500', 
                 color: 'white',
                 border: 'none',
                 cursor: 'pointer',
@@ -630,10 +696,10 @@ const YourGoogleCalendar = () => {
         />
       )}
 
-      {/* NOTIZEN-POPUP (grosses Fenster) */}
+      {/* NOTIZEN-POPUP */}
       {showNotesModal && (
         <>
-          {/* Overlay zum Schliessen */}
+          {/* Overlay */}
           <div
             onClick={() => setShowNotesModal(false)}
             style={{
@@ -653,7 +719,7 @@ const YourGoogleCalendar = () => {
               left: '50%',
               transform: 'translate(-50%, -50%)',
               backgroundColor: 'white',
-              color: 'black',              // <-- Hier schwarzer Text
+              color: 'black',
               borderRadius: '8px',
               boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
               zIndex: 1000,
@@ -667,7 +733,7 @@ const YourGoogleCalendar = () => {
           >
             <h2 style={{ marginBottom: '10px', color: 'black' }}>Notizen & Ordner</h2>
 
-            {/* Erstellen-Buttons oben rechts */}
+            {/* Buttons: Ordner+ / Notiz+ */}
             <div style={{ position: 'absolute', top: '20px', right: '30px', display: 'flex', gap: '10px' }}>
               <button
                 onClick={() => setShowNewFolderPopup(true)}
@@ -695,7 +761,7 @@ const YourGoogleCalendar = () => {
               </button>
             </div>
 
-            {/* Aktueller Pfad */}
+            {/* Pfad-Anzeige */}
             <p>
               <strong>Pfad:</strong>{' '}
               {currentPath.length > 0
@@ -720,11 +786,12 @@ const YourGoogleCalendar = () => {
               </button>
             )}
 
-            {/* Ordner / Notizen-Liste */}
+            {/* Ordner / Notizen-Liste (bereits als Tree in notesStructure) */}
             <ul style={{ flex: '1', margin: 0, padding: 0, listStyle: 'none' }}>
-              {(currentPath.length === 0
-                ? notesStructure
-                : currentPath[currentPath.length - 1].children
+              {(
+                currentPath.length === 0
+                  ? notesStructure // Root
+                  : currentPath[currentPath.length - 1].children
               ).map(item => (
                 <li key={item.id} style={{ cursor: 'pointer', padding: '5px 0' }}>
                   {item.type === 'folder' ? (
@@ -741,7 +808,7 @@ const YourGoogleCalendar = () => {
               ))}
             </ul>
 
-            {/* Schliessen-Button unten in der Mitte */}
+            {/* Schliessen-Button */}
             <button
               onClick={() => setShowNotesModal(false)}
               style={{
@@ -760,7 +827,7 @@ const YourGoogleCalendar = () => {
         </>
       )}
 
-      {/* POP-UP FÜR NEUEN ORDNER */}
+      {/* POP-UP: NEUER ORDNER */}
       {showNewFolderPopup && (
         <>
           <div
@@ -782,7 +849,7 @@ const YourGoogleCalendar = () => {
               left: '50%',
               transform: 'translate(-50%, -50%)',
               backgroundColor: 'white',
-              color: 'black', // <-- schwarzer Text
+              color: 'black',
               borderRadius: '8px',
               boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
               padding: '20px',
@@ -836,7 +903,7 @@ const YourGoogleCalendar = () => {
         </>
       )}
 
-      {/* POP-UP FÜR NEUE NOTIZ */}
+      {/* POP-UP: NEUE NOTIZ */}
       {showNewNotePopup && (
         <>
           <div
@@ -858,7 +925,7 @@ const YourGoogleCalendar = () => {
               left: '50%',
               transform: 'translate(-50%, -50%)',
               backgroundColor: 'white',
-              color: 'black', // <-- schwarzer Text
+              color: 'black',
               borderRadius: '8px',
               boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
               padding: '20px',

@@ -1,4 +1,4 @@
-//server.js
+// server.js
 const express = require('express');
 const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
@@ -6,9 +6,14 @@ const cors = require('cors');
 const passport = require('passport');
 require('dotenv').config();
 const connectDB = require('./config/db');
-const authRoutes = require('./routes/auth'); // Authentication routes
-const apiRoutes = require('./routes/api'); // API routes for calendars, etc.
+
+// ⛔ Alte Zeile: const authRoutes = require('./routes/auth');
+// ✅ Neue Zeile: Wir holen das Router-Objekt aus `auth.js`
+const { authRouter } = require('./routes/auth');
+
+const apiRoutes = require('./routes/api'); // Calendar and group API Routes
 const tasksRoutes = require('./routes/tasks'); // Task routes
+const notesRoutes = require('./routes/notesRoutes'); // Notes routes
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -43,9 +48,13 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Routes
-app.use('/auth', authRoutes); // Authentication Routes
-app.use('/api', apiRoutes); // Calendar and group API Routes
+// ⛔ Alte Zeile: app.use('/auth', authRoutes);
+// ✅ Neue Zeile
+app.use('/auth', authRouter); // Authentifizierungs-Router aus auth.js
+
+app.use('/api', apiRoutes);   // Calendar and group API Routes
 app.use('/tasks', tasksRoutes); // Task-related routes
+app.use('/notes', notesRoutes); // Notiz-Routen
 
 // Start the Server
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

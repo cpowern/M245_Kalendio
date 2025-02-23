@@ -7,13 +7,11 @@ const router = express.Router();
 const User = require('../models/User'); // Füge das hinzu!
 const Calendar = require('../models/Calendar'); // Importiere das Calendar Model
 
-// Middleware to ensure user authentication
-const ensureAuthenticated = (req, res, next) => {
-    if (req.isAuthenticated()) {
-        return next();
-    }
-    res.status(401).json({ success: false, message: 'Unauthorized' });
-};
+const { ensureAuthenticated } = require('../routes/auth');
+
+if (!ensureAuthenticated) {
+    console.error("❌ ERROR: ensureAuthenticated is undefined!");
+}
 
 // Endpoint to list user calendars
 router.get('/list-calendars', ensureAuthenticated, async (req, res) => {

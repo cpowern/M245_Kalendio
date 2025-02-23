@@ -4,17 +4,8 @@ const router = express.Router();
 const Task = require('../models/Task');
 const Calendar = require('../models/Calendar'); // importiert, um Owner zu checken
 const { google } = require('googleapis');
+const { ensureAuthenticated } = require('../routes/auth'); 
 
-/**
- * Middleware, um sicherzustellen, dass der User eingeloggt ist.
- * So hast du in req.user immer deinen User.
- */
-function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  return res.status(401).json({ success: false, message: 'Unauthorized (no req.user)' });
-}
 
 // -----------------------------------------------------
 // CREATE TASK:
@@ -377,5 +368,9 @@ router.post('/reject-task/:id', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error rejecting task' });
   }
 });
+
+// Exportieren, damit sie in anderen Dateien verwendet werden kann
+module.exports = { ensureAuthenticated };
+
 
 module.exports = router;
