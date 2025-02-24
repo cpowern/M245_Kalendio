@@ -41,7 +41,7 @@ app.use(
         resave: false,
         saveUninitialized: false,
         store: store, // MongoDB store
-        cookie: { maxAge: 1000 * 60 * 60 * 24 }, // 1 day
+        cookie: { maxAge: 1000 * 60 * 60 * 24 * 3 }, // 1 day
     })
 );
 app.use(passport.initialize());

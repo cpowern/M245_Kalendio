@@ -249,6 +249,19 @@ const ensureAuthenticated = (req, res, next) => {
 // -----------------------------------------
 // Exporte
 // -----------------------------------------
+
+authRouter.get('/logout', (req, res) => {
+  req.logout((err) => {
+      if (err) return res.status(500).json({ success: false, message: "Logout failed" });
+      req.session.destroy(() => {
+          res.clearCookie("connect.sid", { path: "/" }); // 🔹 Destroy session cookie
+          res.status(200).json({ success: true, message: "Logged out successfully" });
+      });
+  });
+});
+
+
+
 module.exports = {
   authRouter,
   ensureAuthenticated,

@@ -36,6 +36,17 @@ const GroupSelection = () => {
       });
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      console.log('Logout wird aufgerufen');
+      await axios.get('http://localhost:5000/auth/logout', { withCredentials: true });
+      navigate('/login');  // Relativer Pfad
+    } catch (error) {
+      console.error("Fehler beim Logout:", error);
+    }
+  };
+  
+
   // Funktion zum Beitreten einer Gruppe
   const handleJoinGroup = async () => {
     if (groupCode.trim() === '') {
@@ -168,6 +179,7 @@ const GroupSelection = () => {
             <button className="google-button" onClick={handleJoinGroup}>
               Beitreten
             </button>
+            <button className="logout-button" onClick={handleLogout}>Logout</button>
           </div>
         </div>
 
